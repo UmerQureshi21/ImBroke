@@ -7,6 +7,7 @@ import anthropic
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from .database import get_conn, init_db
 
@@ -82,7 +83,7 @@ def categorize_with_claude(transactions: list[dict]) -> list[dict]:
 - Transport: gas stations, transit cards (Presto), bus, subway, Uber, Lyft, parking
 - Entertainment: streaming services, Claude.ai, ElevenLabs, YouTube, gaming, movies, sports events, clubs, subscriptions
 - Shopping: groceries, retail stores, convenience stores, No Frills, Hasty Market, online shopping
-- Health: pharmacy, medical, dental, gym, fitness
+- Health & Wellness: pharmacy, medical, dental, gym, fitness
 - Dining Out: restaurants, fast food (McDonald's, Popeyes, Dave's Hot Chicken), cafes, food courts, concessions
 - Personal Care: haircuts, beauty salons, spa, personal hygiene
 - Other: donations, religious institutions (Masjid), anything that doesn't fit above
@@ -129,23 +130,71 @@ async def upload_csv(file: UploadFile = File(...)):
             detail="No expense transactions found. Make sure the file is a TD bank CSV.",
         )
 
-    transactions = categorize_with_claude(transactions)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT date, merchant, amount FROM transactions")
+            existing = {(r["date"], r["merchant"], r["amount"]) for r in cur.fetchall()}
+
+    new_transactions = [
+        t for t in transactions
+        if (t["date"], t["merchant"], t["amount"]) not in existing
+    ]
+    skipped = len(transactions) - len(new_transactions)
+
+    if not new_transactions:
+        return {
+            "message": f"All {len(transactions)} transactions already exist, nothing added.",
+            "transactions": [],
+        }
+
+    new_transactions = categorize_with_claude(new_transactions)
 
     with get_conn() as conn:
         with conn.cursor() as cur:
             rows = []
-            for t in transactions:
+            for t in new_transactions:
                 cur.execute(
-                    "INSERT INTO transactions (date, merchant, amount, category) VALUES (%s, %s, %s, %s) RETURNING id",
+                    "INSERT INTO transactions (date, merchant, amount, category) VALUES (%s, %s, %s, %s) ON CONFLICT (date, merchant, amount) DO NOTHING RETURNING id",
                     (t["date"], t["merchant"], t["amount"], t["category"]),
                 )
-                row_id = cur.fetchone()["id"]
-                rows.append({"id": row_id, **t})
+                result = cur.fetchone()
+                if result:
+                    rows.append({"id": result["id"], **t})
+
+    parts = [f"Added {len(rows)} new transaction{'s' if len(rows) != 1 else ''}"]
+    if skipped:
+        parts.append(f"{skipped} already existed")
 
     return {
-        "message": f"Uploaded and categorized {len(rows)} transactions",
+        "message": ", ".join(parts) + ".",
         "transactions": rows,
     }
+
+
+class BudgetIn(BaseModel):
+    category: str
+    monthly_limit: float
+
+
+@app.get("/budgets")
+def get_budgets():
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT category, monthly_limit FROM budgets")
+            rows = cur.fetchall()
+    return {r["category"]: r["monthly_limit"] for r in rows}
+
+
+@app.post("/budgets")
+def upsert_budget(budget: BudgetIn):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO budgets (category, monthly_limit) VALUES (%s, %s)
+                   ON CONFLICT (category) DO UPDATE SET monthly_limit = EXCLUDED.monthly_limit""",
+                (budget.category, budget.monthly_limit),
+            )
+    return {"category": budget.category, "monthly_limit": budget.monthly_limit}
 
 
 @app.get("/transactions")
