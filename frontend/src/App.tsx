@@ -19,6 +19,7 @@ interface CategorySummary {
 
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [budgets, setBudgets] = useState<Record<string, number>>({})
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
@@ -30,7 +31,16 @@ function App() {
     setTransactions(data)
   }
 
-  useEffect(() => { fetchTransactions() }, [])
+  const fetchBudgets = async () => {
+    const res = await fetch(`${API}/budgets`)
+    const data = await res.json()
+    setBudgets(data)
+  }
+
+  useEffect(() => {
+    fetchTransactions()
+    fetchBudgets()
+  }, [])
 
   const handleUpload = async (file: File) => {
     setUploading(true)
@@ -80,7 +90,10 @@ function App() {
           }}
         >
           {uploading ? (
-            <p>Categorizing with AI...</p>
+            <div className="upload-loading">
+              <div className="spinner" />
+              <p>Categorizing with AI...</p>
+            </div>
           ) : (
             <>
               <p>Drop your CSV here or <span className="link">click to upload</span></p>
@@ -133,12 +146,32 @@ function App() {
                   >
                     <div className="category-header">
                       <span className="category-name">{category}</span>
-                      <span className="category-total">${summary.total.toFixed(2)}</span>
+                      <div className="category-header-right">
+                        <span className="category-total">${summary.total.toFixed(2)}</span>
+                        <span className={`chevron ${expandedCategory === category ? 'open' : ''}`}>›</span>
+                      </div>
                     </div>
                     <div className="category-count">
                       {summary.count} transaction{summary.count !== 1 ? 's' : ''}
                     </div>
-                    {expandedCategory === category && (
+                    {budgets[category] !== undefined && (
+                      <div className="budget-bar-wrap">
+                        <div className="budget-bar-labels">
+                          <span>${summary.total.toFixed(2)} spent</span>
+                          <span>${budgets[category]} budget</span>
+                        </div>
+                        <div className="budget-bar-track">
+                          <div
+                            className={`budget-bar-fill ${
+                              summary.total / budgets[category] >= 1 ? 'over' :
+                              summary.total / budgets[category] >= 0.8 ? 'warn' : ''
+                            }`}
+                            style={{ width: `${Math.min((summary.total / budgets[category]) * 100, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div className={`transaction-wrapper ${expandedCategory === category ? 'open' : ''}`}>
                       <ul className="transaction-list">
                         {summary.transactions
                           .sort((a, b) => b.date.localeCompare(a.date))
@@ -150,7 +183,7 @@ function App() {
                             </li>
                           ))}
                       </ul>
-                    )}
+                    </div>
                   </div>
                 ))}
             </div>
