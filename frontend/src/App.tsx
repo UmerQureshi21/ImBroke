@@ -30,6 +30,7 @@ function App() {
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null)
   const [calMonth, setCalMonth] = useState(new Date().getMonth())
   const [calYear, setCalYear] = useState(new Date().getFullYear())
+  const [threshold, setThreshold] = useState(100)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
 
@@ -243,6 +244,17 @@ function App() {
 
           <section className="calendar-section">
             <h2>Daily View</h2>
+            <div className="threshold-control">
+              <span>Highlight days over <strong>${threshold}</strong></span>
+              <input
+                type="range"
+                min={0}
+                max={500}
+                step={5}
+                value={threshold}
+                onChange={e => setThreshold(Number(e.target.value))}
+              />
+            </div>
             <div className="calendar">
               <div className="cal-nav">
                 <button onClick={prevMonth}>‹</button>
@@ -257,10 +269,12 @@ function App() {
                   const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                   const hasTxns = !!byDate[dateStr]
                   const isSelected = selectedDate === dateStr
+                  const dayTotal = byDate[dateStr]?.reduce((s, t) => s + t.amount, 0) ?? 0
+                  const isOver = hasTxns && dayTotal >= threshold
                   return (
                     <div
                       key={day}
-                      className={`cal-day ${hasTxns ? 'has-txns' : ''} ${isSelected ? 'selected' : ''}`}
+                      className={`cal-day ${hasTxns ? 'has-txns' : ''} ${isOver ? 'over-threshold' : ''} ${isSelected ? 'selected' : ''}`}
                       onClick={(e) => hasTxns && handleDayClick(dateStr, e)}
                     >
                       {day}

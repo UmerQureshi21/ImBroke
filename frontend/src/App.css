@@ -241,36 +241,57 @@ header p {
   font-size: 1.1rem;
   font-weight: 600;
   color: #374151;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+}
+
+.threshold-control {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.threshold-control strong {
+  color: #111827;
+}
+
+.threshold-control input[type='range'] {
+  flex: 1;
+  max-width: 260px;
+  accent-color: #16a34a;
+  cursor: pointer;
 }
 
 .calendar {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 20px;
+  padding: 14px;
+  max-width: 420px;
 }
 
 .cal-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .cal-nav span {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   color: #111827;
 }
 
 .cal-nav button {
   background: none;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  font-size: 1.1rem;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  font-size: 1rem;
   color: #374151;
   cursor: pointer;
   display: flex;
@@ -287,15 +308,15 @@ header p {
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 3px;
 }
 
 .cal-day-label {
   text-align: center;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 600;
   color: #9ca3af;
-  padding-bottom: 6px;
+  padding-bottom: 4px;
   text-transform: uppercase;
 }
 
@@ -305,8 +326,8 @@ header p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  font-size: 0.85rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
   color: #374151;
   cursor: default;
   position: relative;
@@ -324,24 +345,33 @@ header p {
   background: #f0fdf4;
 }
 
+.cal-day.over-threshold {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.cal-day.over-threshold:hover {
+  background: #fecaca;
+}
+
+.cal-day.over-threshold .cal-dot {
+  background: #ef4444;
+}
+
 .cal-day.selected {
-  background: #16a34a;
-  color: #ffffff;
-}
-
-.cal-day.selected:hover {
-  background: #15803d;
-}
-
-.cal-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #22c55e;
+  background: #16a34a !important;
+  color: #ffffff !important;
 }
 
 .cal-day.selected .cal-dot {
   background: #ffffff;
+}
+
+.cal-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #22c55e;
 }
 
 /* Day popover */
