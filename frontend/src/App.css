@@ -232,6 +232,160 @@ header p {
 .budget-bar-fill.warn { background: #f59e0b; }
 .budget-bar-fill.over { background: #ef4444; }
 
+/* Calendar */
+.calendar-section {
+  margin-top: 40px;
+}
+
+.calendar-section h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 16px;
+}
+
+.calendar {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.cal-nav span {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.cal-nav button {
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  font-size: 1.1rem;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.cal-nav button:hover {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-day-label {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #9ca3af;
+  padding-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #374151;
+  cursor: default;
+  position: relative;
+  gap: 2px;
+  transition: background 0.15s;
+}
+
+.cal-day.has-txns {
+  cursor: pointer;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cal-day.has-txns:hover {
+  background: #f0fdf4;
+}
+
+.cal-day.selected {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.cal-day.selected:hover {
+  background: #15803d;
+}
+
+.cal-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.cal-day.selected .cal-dot {
+  background: #ffffff;
+}
+
+/* Day popover */
+.day-popover {
+  position: fixed;
+  z-index: 200;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 16px;
+  width: 280px;
+  transform: translateX(-50%);
+}
+
+.day-popover-arrow {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 11px;
+  height: 11px;
+  background: #ffffff;
+  border-left: 1px solid #e5e7eb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.day-popover h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.day-total {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f3f4f6;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #16a34a;
+  text-align: right;
+}
+
 /* Transaction list (expanded) */
 .transaction-wrapper {
   display: grid;

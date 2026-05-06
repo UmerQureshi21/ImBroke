@@ -17,13 +17,32 @@ interface CategorySummary {
   transactions: Transaction[]
 }
 
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [budgets, setBudgets] = useState<Record<string, number>>({})
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null)
+  const [calMonth, setCalMonth] = useState(new Date().getMonth())
+  const [calYear, setCalYear] = useState(new Date().getFullYear())
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setSelectedDate(null)
+        setPopoverPos(null)
+      }
+    }
+    if (selectedDate) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [selectedDate])
 
   const fetchTransactions = async () => {
     const res = await fetch(`${API}/transactions`)
@@ -59,6 +78,38 @@ function App() {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
+  }
+
+  const byDate = transactions.reduce<Record<string, Transaction[]>>((acc, t) => {
+    if (!acc[t.date]) acc[t.date] = []
+    acc[t.date].push(t)
+    return acc
+  }, {})
+
+  const firstDayOfMonth = new Date(calYear, calMonth, 1).getDay()
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
+
+  const prevMonth = () => {
+    if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1) }
+    else setCalMonth(m => m - 1)
+  }
+  const nextMonth = () => {
+    if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1) }
+    else setCalMonth(m => m + 1)
+  }
+
+  const handleDayClick = (dateStr: string, e: React.MouseEvent<HTMLDivElement>) => {
+    if (selectedDate === dateStr) {
+      setSelectedDate(null)
+      setPopoverPos(null)
+      return
+    }
+    const rect = e.currentTarget.getBoundingClientRect()
+    setPopoverPos({
+      top: rect.bottom + 8,
+      left: rect.left + rect.width / 2,
+    })
+    setSelectedDate(dateStr)
   }
 
   const byCategory = transactions.reduce<Record<string, CategorySummary>>((acc, t) => {
@@ -187,6 +238,61 @@ function App() {
                   </div>
                 ))}
             </div>
+          </section>
+
+
+          <section className="calendar-section">
+            <h2>Daily View</h2>
+            <div className="calendar">
+              <div className="cal-nav">
+                <button onClick={prevMonth}>‹</button>
+                <span>{MONTHS[calMonth]} {calYear}</span>
+                <button onClick={nextMonth}>›</button>
+              </div>
+              <div className="cal-grid">
+                {DAYS.map(d => <div key={d} className="cal-day-label">{d}</div>)}
+                {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`e${i}`} />)}
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const day = i + 1
+                  const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                  const hasTxns = !!byDate[dateStr]
+                  const isSelected = selectedDate === dateStr
+                  return (
+                    <div
+                      key={day}
+                      className={`cal-day ${hasTxns ? 'has-txns' : ''} ${isSelected ? 'selected' : ''}`}
+                      onClick={(e) => hasTxns && handleDayClick(dateStr, e)}
+                    >
+                      {day}
+                      {hasTxns && <span className="cal-dot" />}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {selectedDate && popoverPos && byDate[selectedDate] && (
+              <div
+                ref={popoverRef}
+                className="day-popover"
+                style={{ top: popoverPos.top, left: popoverPos.left }}
+              >
+                <div className="day-popover-arrow" />
+                <h3>{new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
+                <ul className="transaction-list">
+                  {byDate[selectedDate].map(t => (
+                    <li key={t.id}>
+                      <span className="t-date">{t.category}</span>
+                      <span className="t-merchant">{t.merchant}</span>
+                      <span className="t-amount">${t.amount.toFixed(2)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="day-total">
+                  Total: ${byDate[selectedDate].reduce((s, t) => s + t.amount, 0).toFixed(2)}
+                </div>
+              </div>
+            )}
           </section>
         </>
       )}
