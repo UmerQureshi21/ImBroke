@@ -80,7 +80,7 @@ export default function Calendar({ byDate, defaultMonth, defaultYear }: Props) {
                 key={day}
                 onClick={(e) => hasTxns && handleDayClick(dateStr, e)}
                 className={[
-                  'aspect-square flex flex-col items-center justify-center rounded-md text-[0.75rem] gap-0.5 transition-colors',
+                  'aspect-square flex flex-col items-center justify-center rounded-md text-[35px] gap-0.5 transition-colors',
                   !hasTxns ? 'text-gray-400 cursor-default' : 'font-semibold cursor-pointer',
                   isSelected ? 'bg-green-600 text-white'
                     : isOver ? 'bg-red-100 text-red-800 hover:bg-red-200'
@@ -89,7 +89,7 @@ export default function Calendar({ byDate, defaultMonth, defaultYear }: Props) {
               >
                 {day}
                 {hasTxns && (
-                  <span className={`w-[3px] h-[3px] rounded-full ${isSelected ? 'bg-white' : isOver ? 'bg-red-400' : 'bg-green-500'}`} />
+                  <span className={`w-[10px] h-[10px] rounded-full ${isSelected ? 'bg-white' : isOver ? 'bg-red-400' : 'bg-green-500'}`} />
                 )}
               </div>
             )

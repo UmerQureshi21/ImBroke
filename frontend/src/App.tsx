@@ -83,6 +83,23 @@ export default function App() {
 
   const totalSpend = filtered.reduce((sum, t) => sum + t.amount, 0)
 
+  // For each budgeted category, walk all months before selectedMonth in order,
+  // compounding overage forward to get the spillover INTO the current month.
+  const spillovers: Record<string, number> = {}
+  if (selectedMonth) {
+    const priorMonths = availableMonths.filter(m => m < selectedMonth)
+    for (const category of Object.keys(budgets)) {
+      let carry = 0
+      for (const month of priorMonths) {
+        const spent = transactions
+          .filter(t => t.date.startsWith(month) && t.category === category)
+          .reduce((sum, t) => sum + t.amount, 0)
+        carry = Math.max(0, spent + carry - budgets[category])
+      }
+      spillovers[category] = carry
+    }
+  }
+
   // Parse selected month for Calendar default
   const [calYear, calMonth] = selectedMonth
     ? selectedMonth.split('-').map(Number)
@@ -92,7 +109,7 @@ export default function App() {
     <div className="max-w-[860px] mx-auto px-6 py-12">
       <header className="mb-10">
         <h1 className="text-3xl font-bold text-green-600">Spend Smarter!</h1>
-        <p className="mt-1 text-sm text-gray-500">Upload your TD bank statement to track spending</p>
+        <p className="mt-1 text-sm text-gray-500"></p>
       </header>
 
       <ManualEntry onSave={fetchTransactions} />
@@ -119,6 +136,7 @@ export default function App() {
                     category={category}
                     summary={summary}
                     budget={budgets[category]}
+                    spillover={spillovers[category] ?? 0}
                     expanded={expandedCategory === category}
                     onToggle={() => setExpandedCategory(expandedCategory === category ? null : category)}
                   />
