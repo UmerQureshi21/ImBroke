@@ -4,12 +4,14 @@ interface Props {
   category: string
   summary: CategorySummary
   budget?: number
+  spillover?: number
   expanded: boolean
   onToggle: () => void
 }
 
-export default function CategoryCard({ category, summary, budget, expanded, onToggle }: Props) {
-  const pct = budget ? summary.total / budget : 0
+export default function CategoryCard({ category, summary, budget, spillover = 0, expanded, onToggle }: Props) {
+  const effective = summary.total + spillover
+  const pct = budget ? effective / budget : 0
 
   return (
     <div
@@ -41,9 +43,15 @@ export default function CategoryCard({ category, summary, budget, expanded, onTo
       {budget !== undefined && (
         <div className="mt-3">
           <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-            <span>${summary.total.toFixed(2)} spent</span>
+            <span>${effective.toFixed(2)} spent</span>
             <span>${budget} budget</span>
           </div>
+          {spillover > 0 && (
+            <div className="flex justify-between text-xs text-amber-600 mb-1.5">
+              <span>↪ Carried from last month</span>
+              <span>+${spillover.toFixed(2)}</span>
+            </div>
+          )}
           <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-[width] duration-500 ${
