@@ -153,7 +153,9 @@ export default function App() {
                     budget={budgets[category]}
                     spillover={spillovers[category] ?? 0}
                     expanded={expandedCategory === category}
+                    categories={categories}
                     onToggle={() => setExpandedCategory(expandedCategory === category ? null : category)}
+                    onUpdate={fetchTransactions}
                   />
                 ))}
             </div>

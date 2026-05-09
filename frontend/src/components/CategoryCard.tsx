@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import type { CategorySummary } from '../types'
+import { apiFetch } from '../api'
 
 interface Props {
   category: string
@@ -6,12 +8,25 @@ interface Props {
   budget?: number
   spillover?: number
   expanded: boolean
+  categories: string[]
   onToggle: () => void
+  onUpdate: () => void
 }
 
-export default function CategoryCard({ category, summary, budget, spillover = 0, expanded, onToggle }: Props) {
+export default function CategoryCard({ category, summary, budget, spillover = 0, expanded, categories, onToggle, onUpdate }: Props) {
   const effective = summary.total + spillover
   const pct = budget ? effective / budget : 0
+  const [editingId, setEditingId] = useState<number | null>(null)
+
+  const handleCategoryChange = async (id: number, newCategory: string) => {
+    setEditingId(null)
+    if (newCategory === category) return
+    await apiFetch(`/transactions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ category: newCategory }),
+    })
+    onUpdate()
+  }
 
   return (
     <div
@@ -72,10 +87,36 @@ export default function CategoryCard({ category, summary, budget, spillover = 0,
             {summary.transactions
               .sort((a, b) => b.date.localeCompare(a.date))
               .map((t) => (
-                <li key={t.id} className="grid grid-cols-[110px_1fr_auto] gap-3 items-center py-1">
+                <li
+                  key={t.id}
+                  className="grid grid-cols-[110px_1fr_auto_auto] gap-2 items-center py-1"
+                >
                   <span className="text-gray-400 text-[0.72rem]">{t.date}</span>
                   <span className="text-gray-700 text-sm font-medium truncate">{t.merchant}</span>
                   <span className="text-gray-900 text-sm font-semibold text-right">${t.amount.toFixed(2)}</span>
+
+                  {editingId === t.id ? (
+                    <select
+                      autoFocus
+                      defaultValue={category}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => handleCategoryChange(t.id, e.target.value)}
+                      onBlur={() => setEditingId(null)}
+                      className="text-xs border border-green-400 rounded-md px-1.5 py-1 focus:outline-none bg-white text-gray-700 cursor-pointer"
+                    >
+                      {categories.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <button
+                      onClick={e => { e.stopPropagation(); setEditingId(t.id) }}
+                      title="Change category"
+                      className="text-gray-300 hover:text-green-600 transition-colors text-xs px-1.5 py-1 rounded hover:bg-green-50 cursor-pointer whitespace-nowrap"
+                    >
+                      Move ›
+                    </button>
+                  )}
                 </li>
               ))}
           </div>

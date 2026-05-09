@@ -299,6 +299,10 @@ class TransactionIn(BaseModel):
     category: str
 
 
+class TransactionUpdate(BaseModel):
+    category: str
+
+
 @app.post("/transactions")
 def add_transaction(txn: TransactionIn, user_id: int = Depends(get_current_user)):
     with get_conn() as conn:
@@ -311,6 +315,19 @@ def add_transaction(txn: TransactionIn, user_id: int = Depends(get_current_user)
     if not result:
         raise HTTPException(status_code=409, detail="A transaction with this date, merchant, and amount already exists.")
     return {"id": result["id"], "date": txn.date, "merchant": txn.merchant, "amount": txn.amount, "category": txn.category}
+
+
+@app.patch("/transactions/{txn_id}")
+def update_transaction(txn_id: int, body: TransactionUpdate, user_id: int = Depends(get_current_user)):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE transactions SET category = %s WHERE id = %s AND user_id = %s RETURNING id",
+                (body.category, txn_id, user_id),
+            )
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail="Transaction not found.")
+    return {"id": txn_id, "category": body.category}
 
 
 @app.get("/transactions")
