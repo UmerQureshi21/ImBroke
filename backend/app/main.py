@@ -84,7 +84,8 @@ def categorize_with_claude(transactions: list[dict]) -> list[dict]:
 - Entertainment: streaming services, Claude.ai, ElevenLabs, YouTube, gaming, movies, sports events, clubs, subscriptions
 - Shopping: groceries, retail stores, convenience stores, No Frills, Hasty Market, online shopping
 - Health & Wellness: pharmacy, medical, dental, gym, fitness
-- Dining Out: restaurants, fast food (McDonald's, Popeyes, Dave's Hot Chicken), cafes, food courts, concessions
+- Tim Hortons: Tim Hortons locations only
+- Dining Out: restaurants, fast food (McDonald's, Popeyes, Dave's Hot Chicken, Osmow's), cafes, food courts, concessions, campus food (McMaster Hospitality Sale)
 - Personal Care: haircuts, beauty salons, spa, personal hygiene
 - Other: donations, religious institutions (Masjid), anything that doesn't fit above
 
@@ -195,6 +196,27 @@ def upsert_budget(budget: BudgetIn):
                 (budget.category, budget.monthly_limit),
             )
     return {"category": budget.category, "monthly_limit": budget.monthly_limit}
+
+
+class TransactionIn(BaseModel):
+    date: str
+    merchant: str
+    amount: float
+    category: str
+
+
+@app.post("/transactions")
+def add_transaction(txn: TransactionIn):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO transactions (date, merchant, amount, category) VALUES (%s, %s, %s, %s) ON CONFLICT (date, merchant, amount) DO NOTHING RETURNING id",
+                (txn.date, txn.merchant, txn.amount, txn.category),
+            )
+            result = cur.fetchone()
+    if not result:
+        raise HTTPException(status_code=409, detail="A transaction with this date, merchant, and amount already exists.")
+    return {"id": result["id"], "date": txn.date, "merchant": txn.merchant, "amount": txn.amount, "category": txn.category}
 
 
 @app.get("/transactions")
