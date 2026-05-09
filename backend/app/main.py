@@ -5,10 +5,11 @@ from datetime import datetime
 
 import anthropic
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from .auth import create_token, get_current_user, hash_password, verify_password
 from .database import get_conn, init_db
 
 load_dotenv()
@@ -39,6 +40,41 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+class AuthIn(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/register", status_code=status.HTTP_201_CREATED)
+def register(body: AuthIn):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM users WHERE email = %s", (body.email,))
+            if cur.fetchone():
+                raise HTTPException(status_code=409, detail="Email already registered.")
+            cur.execute(
+                "INSERT INTO users (email, hashed_password) VALUES (%s, %s) RETURNING id",
+                (body.email, hash_password(body.password)),
+            )
+            user_id = cur.fetchone()["id"]
+    return {"access_token": create_token(user_id), "token_type": "bearer"}
+
+
+@app.post("/login")
+def login(body: AuthIn):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, hashed_password FROM users WHERE email = %s", (body.email,))
+            row = cur.fetchone()
+    if not row or not verify_password(body.password, row["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    return {"access_token": create_token(row["id"]), "token_type": "bearer"}
+
+
+# ── CSV parsing + categorization ──────────────────────────────────────────────
+
 def parse_td_csv(content: str) -> list[dict]:
     """Parse TD bank CSV: date, description, debit, credit, balance (no header row)."""
     transactions = []
@@ -50,7 +86,6 @@ def parse_td_csv(content: str) -> list[dict]:
         merchant = row[1].strip()
         debit_str = row[2].strip()
 
-        # Skip credits/payments (no debit amount)
         if not debit_str:
             continue
         try:
@@ -103,7 +138,6 @@ Return ONLY a valid JSON array with one entry per merchant in the same order:
 
     text = response.content[0].text.strip()
 
-    # Strip markdown code fences if Claude wrapped the JSON
     if "```" in text:
         text = text.split("```")[1]
         if text.startswith("json"):
@@ -119,9 +153,13 @@ Return ONLY a valid JSON array with one entry per merchant in the same order:
     return transactions
 
 
+# ── Protected endpoints ───────────────────────────────────────────────────────
+
 @app.post("/upload")
-async def upload_csv(file: UploadFile = File(...)):
-    # utf-8-sig strips the BOM that Excel/TD sometimes adds
+async def upload_csv(
+    file: UploadFile = File(...),
+    user_id: int = Depends(get_current_user),
+):
     content = (await file.read()).decode("utf-8-sig")
 
     transactions = parse_td_csv(content)
@@ -133,7 +171,7 @@ async def upload_csv(file: UploadFile = File(...)):
 
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT date, merchant, amount FROM transactions")
+            cur.execute("SELECT date, merchant, amount FROM transactions WHERE user_id = %s", (user_id,))
             existing = {(r["date"], r["merchant"], r["amount"]) for r in cur.fetchall()}
 
     new_transactions = [
@@ -155,8 +193,8 @@ async def upload_csv(file: UploadFile = File(...)):
             rows = []
             for t in new_transactions:
                 cur.execute(
-                    "INSERT INTO transactions (date, merchant, amount, category) VALUES (%s, %s, %s, %s) ON CONFLICT (date, merchant, amount) DO NOTHING RETURNING id",
-                    (t["date"], t["merchant"], t["amount"], t["category"]),
+                    "INSERT INTO transactions (user_id, date, merchant, amount, category) VALUES (%s, %s, %s, %s, %s) ON CONFLICT (user_id, date, merchant, amount) DO NOTHING RETURNING id",
+                    (user_id, t["date"], t["merchant"], t["amount"], t["category"]),
                 )
                 result = cur.fetchone()
                 if result:
@@ -178,22 +216,22 @@ class BudgetIn(BaseModel):
 
 
 @app.get("/budgets")
-def get_budgets():
+def get_budgets(user_id: int = Depends(get_current_user)):
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT category, monthly_limit FROM budgets")
+            cur.execute("SELECT category, monthly_limit FROM budgets WHERE user_id = %s", (user_id,))
             rows = cur.fetchall()
     return {r["category"]: r["monthly_limit"] for r in rows}
 
 
 @app.post("/budgets")
-def upsert_budget(budget: BudgetIn):
+def upsert_budget(budget: BudgetIn, user_id: int = Depends(get_current_user)):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """INSERT INTO budgets (category, monthly_limit) VALUES (%s, %s)
-                   ON CONFLICT (category) DO UPDATE SET monthly_limit = EXCLUDED.monthly_limit""",
-                (budget.category, budget.monthly_limit),
+                """INSERT INTO budgets (user_id, category, monthly_limit) VALUES (%s, %s, %s)
+                   ON CONFLICT (user_id, category) DO UPDATE SET monthly_limit = EXCLUDED.monthly_limit""",
+                (user_id, budget.category, budget.monthly_limit),
             )
     return {"category": budget.category, "monthly_limit": budget.monthly_limit}
 
@@ -206,12 +244,12 @@ class TransactionIn(BaseModel):
 
 
 @app.post("/transactions")
-def add_transaction(txn: TransactionIn):
+def add_transaction(txn: TransactionIn, user_id: int = Depends(get_current_user)):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO transactions (date, merchant, amount, category) VALUES (%s, %s, %s, %s) ON CONFLICT (date, merchant, amount) DO NOTHING RETURNING id",
-                (txn.date, txn.merchant, txn.amount, txn.category),
+                "INSERT INTO transactions (user_id, date, merchant, amount, category) VALUES (%s, %s, %s, %s, %s) ON CONFLICT (user_id, date, merchant, amount) DO NOTHING RETURNING id",
+                (user_id, txn.date, txn.merchant, txn.amount, txn.category),
             )
             result = cur.fetchone()
     if not result:
@@ -220,11 +258,12 @@ def add_transaction(txn: TransactionIn):
 
 
 @app.get("/transactions")
-def get_transactions():
+def get_transactions(user_id: int = Depends(get_current_user)):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, date, merchant, amount, category FROM transactions ORDER BY date DESC"
+                "SELECT id, date, merchant, amount, category FROM transactions WHERE user_id = %s ORDER BY date DESC",
+                (user_id,),
             )
             rows = cur.fetchall()
     return [dict(r) for r in rows]

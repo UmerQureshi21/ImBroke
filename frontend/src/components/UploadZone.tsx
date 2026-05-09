@@ -29,10 +29,10 @@ export default function UploadZone({ onUpload, uploading, message }: Props) {
         ) : (
           <>
             <p className="text-gray-700 text-sm">
-              Drop your CSV here or{' '}
+              Or if you need to upload multiple transactions...{' '}
               <span className="text-green-600 font-semibold underline">click to upload</span>
             </p>
-            <p className="text-gray-400 text-xs mt-1.5">TD bank statement CSV</p>
+            <p className="text-gray-400 text-xs mt-1.5">Bank Statement CSV</p>
           </>
         )}
       </div>

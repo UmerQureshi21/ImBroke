@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Transaction, CategorySummary } from './types'
+import { apiFetch } from './api'
+import { useAuth } from './context/AuthContext'
 import UploadZone from './components/UploadZone'
 import SummaryCards from './components/SummaryCards'
 import CategoryCard from './components/CategoryCard'
@@ -7,9 +9,8 @@ import Calendar from './components/Calendar'
 import ManualEntry from './components/ManualEntry'
 import MonthNav from './components/MonthNav'
 
-const API = 'http://localhost:8000'
-
 export default function App() {
+  const { logout } = useAuth()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [budgets, setBudgets] = useState<Record<string, number>>({})
   const [uploading, setUploading] = useState(false)
@@ -18,13 +19,13 @@ export default function App() {
   const [selectedMonth, setSelectedMonth] = useState('')
 
   const fetchTransactions = async () => {
-    const res = await fetch(`${API}/transactions`)
+    const res = await apiFetch('/transactions')
     const data = await res.json()
     setTransactions(data)
   }
 
   const fetchBudgets = async () => {
-    const res = await fetch(`${API}/budgets`)
+    const res = await apiFetch('/budgets')
     const data = await res.json()
     setBudgets(data)
   }
@@ -34,10 +35,8 @@ export default function App() {
     fetchBudgets()
   }, [])
 
-  // Derive sorted list of months that have data
   const availableMonths = [...new Set(transactions.map(t => t.date.slice(0, 7)))].sort()
 
-  // Default to most recent month once data loads
   useEffect(() => {
     if (availableMonths.length > 0 && !selectedMonth) {
       setSelectedMonth(availableMonths[availableMonths.length - 1])
@@ -50,7 +49,7 @@ export default function App() {
     const form = new FormData()
     form.append('file', file)
     try {
-      const res = await fetch(`${API}/upload`, { method: 'POST', body: form })
+      const res = await apiFetch('/upload', { method: 'POST', body: form })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail)
       setMessage(data.message)
@@ -62,7 +61,6 @@ export default function App() {
     }
   }
 
-  // All data filtered to the selected month
   const filtered = selectedMonth
     ? transactions.filter(t => t.date.startsWith(selectedMonth))
     : transactions
@@ -83,8 +81,6 @@ export default function App() {
 
   const totalSpend = filtered.reduce((sum, t) => sum + t.amount, 0)
 
-  // For each budgeted category, walk all months before selectedMonth in order,
-  // compounding overage forward to get the spillover INTO the current month.
   const spillovers: Record<string, number> = {}
   if (selectedMonth) {
     const priorMonths = availableMonths.filter(m => m < selectedMonth)
@@ -100,16 +96,23 @@ export default function App() {
     }
   }
 
-  // Parse selected month for Calendar default
   const [calYear, calMonth] = selectedMonth
     ? selectedMonth.split('-').map(Number)
     : [new Date().getFullYear(), new Date().getMonth() + 1]
 
   return (
     <div className="max-w-[860px] mx-auto px-6 py-12">
-      <header className="mb-10">
-        <h1 className="text-3xl font-bold text-green-600">Spend Smarter!</h1>
-        <p className="mt-1 text-sm text-gray-500"></p>
+      <header className="mb-10 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-green-600">Spend Smarter!</h1>
+          <p className="mt-1 text-sm text-gray-500"></p>
+        </div>
+        <button
+          onClick={logout}
+          className="text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-gray-300 transition-colors cursor-pointer"
+        >
+          Sign out
+        </button>
       </header>
 
       <ManualEntry onSave={fetchTransactions} />
