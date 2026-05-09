@@ -12,6 +12,11 @@ from pydantic import BaseModel
 from .auth import create_token, get_current_user, hash_password, verify_password
 from .database import get_conn, init_db
 
+DEFAULT_CATEGORIES = [
+    'Dining Out', 'Entertainment', 'Health & Wellness', 'Other',
+    'Personal Care', 'Shopping', 'Tim Hortons', 'Transport',
+]
+
 load_dotenv()
 
 app = FastAPI(title="Budgeter API")
@@ -59,6 +64,11 @@ def register(body: AuthIn):
                 (body.email, hash_password(body.password)),
             )
             user_id = cur.fetchone()["id"]
+            for cat in DEFAULT_CATEGORIES:
+                cur.execute(
+                    "INSERT INTO categories (user_id, name) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                    (user_id, cat),
+                )
     return {"access_token": create_token(user_id), "token_type": "bearer"}
 
 
@@ -236,10 +246,60 @@ def upsert_budget(budget: BudgetIn, user_id: int = Depends(get_current_user)):
     return {"category": budget.category, "monthly_limit": budget.monthly_limit}
 
 
+@app.delete("/budgets/{category}")
+def delete_budget(category: str, user_id: int = Depends(get_current_user)):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM budgets WHERE user_id = %s AND category = %s", (user_id, category))
+    return {"deleted": category}
+
+
+# ── Categories ────────────────────────────────────────────
+
+class CategoryIn(BaseModel):
+    name: str
+
+
+@app.get("/categories")
+def get_categories(user_id: int = Depends(get_current_user)):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT name FROM categories WHERE user_id = %s ORDER BY name", (user_id,))
+            rows = cur.fetchall()
+    return [r["name"] for r in rows]
+
+
+@app.post("/categories", status_code=status.HTTP_201_CREATED)
+def add_category(cat: CategoryIn, user_id: int = Depends(get_current_user)):
+    name = cat.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Category name cannot be empty.")
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO categories (user_id, name) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                (user_id, name),
+            )
+    return {"name": name}
+
+
+@app.delete("/categories/{name}")
+def delete_category(name: str, user_id: int = Depends(get_current_user)):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM categories WHERE user_id = %s AND name = %s", (user_id, name))
+            cur.execute("DELETE FROM budgets WHERE user_id = %s AND category = %s", (user_id, name))
+    return {"deleted": name}
+
+
 class TransactionIn(BaseModel):
     date: str
     merchant: str
     amount: float
+    category: str
+
+
+class TransactionUpdate(BaseModel):
     category: str
 
 
@@ -255,6 +315,19 @@ def add_transaction(txn: TransactionIn, user_id: int = Depends(get_current_user)
     if not result:
         raise HTTPException(status_code=409, detail="A transaction with this date, merchant, and amount already exists.")
     return {"id": result["id"], "date": txn.date, "merchant": txn.merchant, "amount": txn.amount, "category": txn.category}
+
+
+@app.patch("/transactions/{txn_id}")
+def update_transaction(txn_id: int, body: TransactionUpdate, user_id: int = Depends(get_current_user)):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE transactions SET category = %s WHERE id = %s AND user_id = %s RETURNING id",
+                (body.category, txn_id, user_id),
+            )
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail="Transaction not found.")
+    return {"id": txn_id, "category": body.category}
 
 
 @app.get("/transactions")
