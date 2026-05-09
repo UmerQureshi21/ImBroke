@@ -91,7 +91,7 @@ export default function App() {
   return (
     <div className="max-w-[860px] mx-auto px-6 py-12">
       <header className="mb-10">
-        <h1 className="text-3xl font-bold text-green-600">Budgeter</h1>
+        <h1 className="text-3xl font-bold text-green-600">Spend Smarter!</h1>
         <p className="mt-1 text-sm text-gray-500">Upload your TD bank statement to track spending</p>
       </header>
 

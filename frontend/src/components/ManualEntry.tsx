@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const CATEGORIES = ['Dining Out', 'Entertainment', 'Health & Wellness', 'Other', 'Personal Care', 'Shopping', 'Transport']
+const CATEGORIES = ['Dining Out', 'Entertainment', 'Health & Wellness', 'Other', 'Personal Care', 'Shopping', 'Tim Hortons', 'Transport']
 
 interface Props {
   onSave: () => void

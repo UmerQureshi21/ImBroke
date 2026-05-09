@@ -59,7 +59,7 @@ export default function Calendar({ byDate, defaultMonth, defaultYear }: Props) {
         />
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-3.5 max-w-[420px]">
+      <div className="bg-white border border-gray-200 rounded-xl p-3.5">
 
         <div className="grid grid-cols-7 gap-[3px]">
           {DAYS.map(d => (

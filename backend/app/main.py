@@ -84,7 +84,8 @@ def categorize_with_claude(transactions: list[dict]) -> list[dict]:
 - Entertainment: streaming services, Claude.ai, ElevenLabs, YouTube, gaming, movies, sports events, clubs, subscriptions
 - Shopping: groceries, retail stores, convenience stores, No Frills, Hasty Market, online shopping
 - Health & Wellness: pharmacy, medical, dental, gym, fitness
-- Dining Out: restaurants, fast food (McDonald's, Popeyes, Dave's Hot Chicken), cafes, food courts, concessions
+- Tim Hortons: Tim Hortons locations only
+- Dining Out: restaurants, fast food (McDonald's, Popeyes, Dave's Hot Chicken, Osmow's), cafes, food courts, concessions, campus food (McMaster Hospitality Sale)
 - Personal Care: haircuts, beauty salons, spa, personal hygiene
 - Other: donations, religious institutions (Masjid), anything that doesn't fit above
 
