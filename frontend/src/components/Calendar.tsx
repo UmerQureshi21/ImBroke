@@ -1,16 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
 import type { Transaction } from '../types'
 
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
 interface Props {
   byDate: Record<string, Transaction[]>
+  defaultMonth?: number
+  defaultYear?: number
 }
 
-export default function Calendar({ byDate }: Props) {
-  const [calMonth, setCalMonth] = useState(new Date().getMonth())
-  const [calYear, setCalYear] = useState(new Date().getFullYear())
+export default function Calendar({ byDate, defaultMonth, defaultYear }: Props) {
+  const calMonth = defaultMonth ?? new Date().getMonth()
+  const calYear = defaultYear ?? new Date().getFullYear()
   const [threshold, setThreshold] = useState(100)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null)
@@ -29,15 +30,6 @@ export default function Calendar({ byDate }: Props) {
 
   const firstDayOfMonth = new Date(calYear, calMonth, 1).getDay()
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
-
-  const prevMonth = () => {
-    if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1) }
-    else setCalMonth(m => m - 1)
-  }
-  const nextMonth = () => {
-    if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1) }
-    else setCalMonth(m => m + 1)
-  }
 
   const handleDayClick = (dateStr: string, e: React.MouseEvent<HTMLDivElement>) => {
     if (selectedDate === dateStr) {
@@ -68,17 +60,6 @@ export default function Calendar({ byDate }: Props) {
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-3.5 max-w-[420px]">
-        <div className="flex items-center justify-between mb-2.5">
-          <button
-            onClick={prevMonth}
-            className="w-6 h-6 flex items-center justify-center border border-gray-200 rounded-md text-gray-700 hover:bg-green-50 hover:border-green-300 transition-colors text-base cursor-pointer"
-          >‹</button>
-          <span className="font-semibold text-[0.88rem] text-gray-900">{MONTHS[calMonth]} {calYear}</span>
-          <button
-            onClick={nextMonth}
-            className="w-6 h-6 flex items-center justify-center border border-gray-200 rounded-md text-gray-700 hover:bg-green-50 hover:border-green-300 transition-colors text-base cursor-pointer"
-          >›</button>
-        </div>
 
         <div className="grid grid-cols-7 gap-[3px]">
           {DAYS.map(d => (

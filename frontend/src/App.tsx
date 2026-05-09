@@ -5,6 +5,7 @@ import SummaryCards from './components/SummaryCards'
 import CategoryCard from './components/CategoryCard'
 import Calendar from './components/Calendar'
 import ManualEntry from './components/ManualEntry'
+import MonthNav from './components/MonthNav'
 
 const API = 'http://localhost:8000'
 
@@ -14,6 +15,7 @@ export default function App() {
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
+  const [selectedMonth, setSelectedMonth] = useState('')
 
   const fetchTransactions = async () => {
     const res = await fetch(`${API}/transactions`)
@@ -31,6 +33,16 @@ export default function App() {
     fetchTransactions()
     fetchBudgets()
   }, [])
+
+  // Derive sorted list of months that have data
+  const availableMonths = [...new Set(transactions.map(t => t.date.slice(0, 7)))].sort()
+
+  // Default to most recent month once data loads
+  useEffect(() => {
+    if (availableMonths.length > 0 && !selectedMonth) {
+      setSelectedMonth(availableMonths[availableMonths.length - 1])
+    }
+  }, [availableMonths.length])
 
   const handleUpload = async (file: File) => {
     setUploading(true)
@@ -50,13 +62,18 @@ export default function App() {
     }
   }
 
-  const byDate = transactions.reduce<Record<string, Transaction[]>>((acc, t) => {
+  // All data filtered to the selected month
+  const filtered = selectedMonth
+    ? transactions.filter(t => t.date.startsWith(selectedMonth))
+    : transactions
+
+  const byDate = filtered.reduce<Record<string, Transaction[]>>((acc, t) => {
     if (!acc[t.date]) acc[t.date] = []
     acc[t.date].push(t)
     return acc
   }, {})
 
-  const byCategory = transactions.reduce<Record<string, CategorySummary>>((acc, t) => {
+  const byCategory = filtered.reduce<Record<string, CategorySummary>>((acc, t) => {
     if (!acc[t.category]) acc[t.category] = { total: 0, count: 0, transactions: [] }
     acc[t.category].total += t.amount
     acc[t.category].count += 1
@@ -64,7 +81,12 @@ export default function App() {
     return acc
   }, {})
 
-  const totalSpend = transactions.reduce((sum, t) => sum + t.amount, 0)
+  const totalSpend = filtered.reduce((sum, t) => sum + t.amount, 0)
+
+  // Parse selected month for Calendar default
+  const [calYear, calMonth] = selectedMonth
+    ? selectedMonth.split('-').map(Number)
+    : [new Date().getFullYear(), new Date().getMonth() + 1]
 
   return (
     <div className="max-w-[860px] mx-auto px-6 py-12">
@@ -78,7 +100,13 @@ export default function App() {
 
       {transactions.length > 0 && (
         <>
-          <SummaryCards totalSpend={totalSpend} transactionCount={transactions.length} />
+          <MonthNav
+            availableMonths={availableMonths}
+            selectedMonth={selectedMonth}
+            onChange={(m) => { setSelectedMonth(m); setExpandedCategory(null) }}
+          />
+
+          <SummaryCards totalSpend={totalSpend} transactionCount={filtered.length} />
 
           <section className="mt-10">
             <h2 className="text-[1.1rem] font-semibold text-gray-700 mb-4">By Category</h2>
@@ -98,7 +126,12 @@ export default function App() {
             </div>
           </section>
 
-          <Calendar byDate={byDate} />
+          <Calendar
+            key={selectedMonth}
+            byDate={byDate}
+            defaultMonth={calMonth - 1}
+            defaultYear={calYear}
+          />
         </>
       )}
     </div>
