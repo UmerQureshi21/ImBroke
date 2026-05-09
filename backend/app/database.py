@@ -30,6 +30,12 @@ CREATE TABLE IF NOT EXISTS budgets (
     monthly_limit REAL NOT NULL,
     PRIMARY KEY (user_id, category)
 );
+
+CREATE TABLE IF NOT EXISTS categories (
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    name TEXT NOT NULL,
+    PRIMARY KEY (user_id, name)
+);
 """
 
 # Each migration is idempotent — safe to re-run on every startup.
@@ -84,6 +90,22 @@ _MIGRATIONS = [
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'transactions_user_date_merchant_amount_key') THEN
             ALTER TABLE transactions ADD CONSTRAINT transactions_user_date_merchant_amount_key UNIQUE (user_id, date, merchant, amount);
         END IF;
+    END $$;
+    """,
+    # 5: seed default categories for existing users who have none yet
+    """
+    DO $$ DECLARE
+        uid INTEGER;
+        cats TEXT[] := ARRAY['Dining Out','Entertainment','Health & Wellness','Other','Personal Care','Shopping','Tim Hortons','Transport'];
+        cat TEXT;
+    BEGIN
+        FOR uid IN SELECT id FROM users LOOP
+            IF NOT EXISTS (SELECT 1 FROM categories WHERE user_id = uid) THEN
+                FOREACH cat IN ARRAY cats LOOP
+                    INSERT INTO categories (user_id, name) VALUES (uid, cat) ON CONFLICT DO NOTHING;
+                END LOOP;
+            END IF;
+        END LOOP;
     END $$;
     """,
 ]

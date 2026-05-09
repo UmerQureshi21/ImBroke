@@ -1,17 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { apiFetch } from '../api'
 
-const CATEGORIES = ['Dining Out', 'Entertainment', 'Health & Wellness', 'Other', 'Personal Care', 'Shopping', 'Tim Hortons', 'Transport']
-
 interface Props {
+  categories: string[]
   onSave: () => void
 }
 
-export default function ManualEntry({ onSave }: Props) {
+export default function ManualEntry({ categories, onSave }: Props) {
   const [date, setDate] = useState('')
   const [merchant, setMerchant] = useState('')
   const [amount, setAmount] = useState('')
-  const [category, setCategory] = useState(CATEGORIES[0])
+  const [category, setCategory] = useState(categories[0] ?? '')
+
+  useEffect(() => {
+    if (category === '' && categories.length > 0) setCategory(categories[0])
+  }, [categories])
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null)
 
@@ -87,7 +90,7 @@ export default function ManualEntry({ onSave }: Props) {
               onChange={e => setCategory(e.target.value)}
               className={inputClass}
             >
-              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+              {categories.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <button

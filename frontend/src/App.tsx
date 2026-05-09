@@ -5,6 +5,7 @@ import { useAuth } from './context/AuthContext'
 import UploadZone from './components/UploadZone'
 import SummaryCards from './components/SummaryCards'
 import CategoryCard from './components/CategoryCard'
+import CategorySettings from './components/CategorySettings'
 import Calendar from './components/Calendar'
 import ManualEntry from './components/ManualEntry'
 import MonthNav from './components/MonthNav'
@@ -13,6 +14,7 @@ export default function App() {
   const { logout } = useAuth()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [budgets, setBudgets] = useState<Record<string, number>>({})
+  const [categories, setCategories] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
@@ -30,9 +32,18 @@ export default function App() {
     setBudgets(data)
   }
 
+  const fetchCategories = async () => {
+    const res = await apiFetch('/categories')
+    const data = await res.json()
+    setCategories(data)
+  }
+
+  const refreshSettings = () => { fetchCategories(); fetchBudgets() }
+
   useEffect(() => {
     fetchTransactions()
     fetchBudgets()
+    fetchCategories()
   }, [])
 
   const availableMonths = [...new Set(transactions.map(t => t.date.slice(0, 7)))].sort()
@@ -115,7 +126,8 @@ export default function App() {
         </button>
       </header>
 
-      <ManualEntry onSave={fetchTransactions} />
+      <CategorySettings categories={categories} budgets={budgets} onRefresh={refreshSettings} />
+      <ManualEntry categories={categories} onSave={fetchTransactions} />
       <UploadZone onUpload={handleUpload} uploading={uploading} message={message} />
 
       {transactions.length > 0 && (
