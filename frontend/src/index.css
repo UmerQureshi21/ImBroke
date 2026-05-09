@@ -1,10 +1,36 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/* ── Theme ────────────────────────────────────────────
+   Edit only this block to retheme the entire app.
+   Map any hex values here — the rest updates itself.
+   ──────────────────────────────────────────────────── */
+:root {
+  --brand-50:  #f0fdf4;
+  --brand-300: #86efac;
+  --brand-400: #4ade80;
+  --brand-500: #22c55e;
+  --brand-600: #16a34a;
+  --brand-700: #15803d;
+  --page-bg:   #f4faf5;
+}
+
+/* Wire the brand variables into Tailwind's green scale.
+   Every bg-green-*, text-green-*, border-green-* class
+   in the components will now use these values. */
+@theme inline {
+  --color-green-50:  var(--brand-50);
+  --color-green-300: var(--brand-300);
+  --color-green-400: var(--brand-400);
+  --color-green-500: var(--brand-500);
+  --color-green-600: var(--brand-600);
+  --color-green-700: var(--brand-700);
+}
+
 @layer base {
   body {
     font-family: 'Poppins', sans-serif;
-    background-color: #f4faf5;
+    background-color: var(--page-bg);
     min-height: 100vh;
     margin: 0;
   }

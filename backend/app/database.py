@@ -4,24 +4,37 @@ import os
 import psycopg2
 import psycopg2.extras
 
+# Schema for fresh installs — tables already existing are unaffected (IF NOT EXISTS).
 _SCHEMA = """
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    hashed_password TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id),
     date TEXT NOT NULL,
     merchant TEXT NOT NULL,
     amount REAL NOT NULL,
     category TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT date_trunc('hour', CURRENT_TIMESTAMP),
-    UNIQUE (date, merchant, amount)
+    UNIQUE (user_id, date, merchant, amount)
 );
 
 CREATE TABLE IF NOT EXISTS budgets (
-    category TEXT PRIMARY KEY,
-    monthly_limit REAL NOT NULL
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    category TEXT NOT NULL,
+    monthly_limit REAL NOT NULL,
+    PRIMARY KEY (user_id, category)
 );
 """
 
+# Each migration is idempotent — safe to re-run on every startup.
 _MIGRATIONS = [
+    # 0: unique constraint on legacy schema (no user_id)
     """
     DO $$ BEGIN
         IF NOT EXISTS (
@@ -32,7 +45,47 @@ _MIGRATIONS = [
         END IF;
     END $$;
     """,
+    # 1: created_at hour precision
     "ALTER TABLE transactions ALTER COLUMN created_at SET DEFAULT date_trunc('hour', CURRENT_TIMESTAMP);",
+    # 2: add user_id to transactions, assign existing rows to first user
+    """
+    DO $$ BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'transactions' AND column_name = 'user_id'
+        ) THEN
+            ALTER TABLE transactions ADD COLUMN user_id INTEGER REFERENCES users(id);
+            UPDATE transactions SET user_id = (SELECT id FROM users ORDER BY id LIMIT 1) WHERE user_id IS NULL;
+            ALTER TABLE transactions ALTER COLUMN user_id SET NOT NULL;
+        END IF;
+    END $$;
+    """,
+    # 3: add user_id to budgets, assign existing rows to first user, fix primary key
+    """
+    DO $$ BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'budgets' AND column_name = 'user_id'
+        ) THEN
+            ALTER TABLE budgets ADD COLUMN user_id INTEGER REFERENCES users(id);
+            UPDATE budgets SET user_id = (SELECT id FROM users ORDER BY id LIMIT 1) WHERE user_id IS NULL;
+            ALTER TABLE budgets ALTER COLUMN user_id SET NOT NULL;
+            ALTER TABLE budgets DROP CONSTRAINT budgets_pkey;
+            ALTER TABLE budgets ADD PRIMARY KEY (user_id, category);
+        END IF;
+    END $$;
+    """,
+    # 4: replace old unique constraint with per-user one
+    """
+    DO $$ BEGIN
+        IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'transactions_date_merchant_amount_key') THEN
+            ALTER TABLE transactions DROP CONSTRAINT transactions_date_merchant_amount_key;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'transactions_user_date_merchant_amount_key') THEN
+            ALTER TABLE transactions ADD CONSTRAINT transactions_user_date_merchant_amount_key UNIQUE (user_id, date, merchant, amount);
+        END IF;
+    END $$;
+    """,
 ]
 
 

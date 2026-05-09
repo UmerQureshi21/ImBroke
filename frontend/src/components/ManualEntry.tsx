@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { apiFetch } from '../api'
 
 const CATEGORIES = ['Dining Out', 'Entertainment', 'Health & Wellness', 'Other', 'Personal Care', 'Shopping', 'Tim Hortons', 'Transport']
 
@@ -19,9 +20,8 @@ export default function ManualEntry({ onSave }: Props) {
     setSaving(true)
     setMessage(null)
     try {
-      const res = await fetch('http://localhost:8000/transactions', {
+      const res = await apiFetch('/transactions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date, merchant, amount: parseFloat(amount), category }),
       })
       const data = await res.json()
