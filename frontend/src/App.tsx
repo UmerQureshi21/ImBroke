@@ -4,6 +4,7 @@ import UploadZone from './components/UploadZone'
 import SummaryCards from './components/SummaryCards'
 import CategoryCard from './components/CategoryCard'
 import Calendar from './components/Calendar'
+import ManualEntry from './components/ManualEntry'
 
 const API = 'http://localhost:8000'
 
@@ -72,6 +73,7 @@ export default function App() {
         <p className="mt-1 text-sm text-gray-500">Upload your TD bank statement to track spending</p>
       </header>
 
+      <ManualEntry onSave={fetchTransactions} />
       <UploadZone onUpload={handleUpload} uploading={uploading} message={message} />
 
       {transactions.length > 0 && (

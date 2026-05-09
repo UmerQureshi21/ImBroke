@@ -197,6 +197,27 @@ def upsert_budget(budget: BudgetIn):
     return {"category": budget.category, "monthly_limit": budget.monthly_limit}
 
 
+class TransactionIn(BaseModel):
+    date: str
+    merchant: str
+    amount: float
+    category: str
+
+
+@app.post("/transactions")
+def add_transaction(txn: TransactionIn):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO transactions (date, merchant, amount, category) VALUES (%s, %s, %s, %s) ON CONFLICT (date, merchant, amount) DO NOTHING RETURNING id",
+                (txn.date, txn.merchant, txn.amount, txn.category),
+            )
+            result = cur.fetchone()
+    if not result:
+        raise HTTPException(status_code=409, detail="A transaction with this date, merchant, and amount already exists.")
+    return {"id": result["id"], "date": txn.date, "merchant": txn.merchant, "amount": txn.amount, "category": txn.category}
+
+
 @app.get("/transactions")
 def get_transactions():
     with get_conn() as conn:
