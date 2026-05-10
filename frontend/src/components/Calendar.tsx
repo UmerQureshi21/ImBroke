@@ -61,9 +61,9 @@ export default function Calendar({ byDate, defaultMonth, defaultYear }: Props) {
 
       <div className="bg-white border border-gray-200 rounded-xl p-3.5">
 
-        <div className="grid grid-cols-7 gap-[3px]">
+        <div className="grid grid-cols-7 gap-[2px] sm:gap-[3px]">
           {DAYS.map(d => (
-            <div key={d} className="text-center text-[0.62rem] font-semibold text-gray-400 uppercase pb-1">{d}</div>
+            <div key={d} className="text-center text-[0.5rem] sm:text-[0.62rem] font-semibold text-gray-400 uppercase pb-1">{d}</div>
           ))}
           {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`e${i}`} />)}
           {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -80,7 +80,7 @@ export default function Calendar({ byDate, defaultMonth, defaultYear }: Props) {
                 key={day}
                 onClick={(e) => hasTxns && handleDayClick(dateStr, e)}
                 className={[
-                  'aspect-square flex flex-col items-center justify-center rounded-md text-[35px] gap-0.5 transition-colors',
+                  'aspect-square flex flex-col items-center justify-center rounded-md text-sm sm:text-xl md:text-2xl gap-0.5 transition-colors',
                   !hasTxns ? 'text-gray-400 cursor-default' : 'font-semibold cursor-pointer',
                   isSelected ? 'bg-green-600 text-white'
                     : isOver ? 'bg-red-100 text-red-800 hover:bg-red-200'
@@ -89,7 +89,7 @@ export default function Calendar({ byDate, defaultMonth, defaultYear }: Props) {
               >
                 {day}
                 {hasTxns && (
-                  <span className={`w-[10px] h-[10px] rounded-full ${isSelected ? 'bg-white' : isOver ? 'bg-red-400' : 'bg-green-500'}`} />
+                  <span className={`w-1.5 h-1.5 sm:w-[10px] sm:h-[10px] rounded-full ${isSelected ? 'bg-white' : isOver ? 'bg-red-400' : 'bg-green-500'}`} />
                 )}
               </div>
             )

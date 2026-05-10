@@ -48,7 +48,7 @@ export default function ManualEntry({ categories, onSave }: Props) {
     <section className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
       <h2 className="text-sm font-semibold text-gray-700 mb-4">Add a transaction</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <div className="grid grid-cols-[1fr_1fr_1fr_1.5fr_auto] gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_1.5fr_auto] gap-3 items-end">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Date</label>
             <input
@@ -59,7 +59,7 @@ export default function ManualEntry({ categories, onSave }: Props) {
               className={inputClass}
             />
           </div>
-          <div className="col-span-1" style={{ gridColumn: 'span 1' }}>
+          <div>
             <label className="block text-xs text-gray-500 mb-1">Description</label>
             <input
               type="text"

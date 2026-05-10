@@ -12,7 +12,7 @@
   --brand-500: #22c55e;
   --brand-600: #16a34a;
   --brand-700: #15803d;
-  --page-bg:   #f4faf5;
+  --page-bg:   #ffffff;
 }
 
 /* Wire the brand variables into Tailwind's green scale.

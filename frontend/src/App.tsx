@@ -112,18 +112,15 @@ export default function App() {
     : [new Date().getFullYear(), new Date().getMonth() + 1]
 
   return (
-    <div className="max-w-[860px] mx-auto px-6 py-12">
-      <header className="mb-10 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-green-600">Spend Smarter!</h1>
-          <p className="mt-1 text-sm text-gray-500"></p>
+    <div className="max-w-[860px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <header className="mb-8 sm:mb-10">
+        <div className="flex items-center gap-3">
+          <img src="/money-max.png" alt="Money Max" className="w-12 h-12 object-contain" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 leading-tight">Money Max</h1>
+            <p className="text-xs text-gray-400">Spend smarter. Save more.</p>
+          </div>
         </div>
-        <button
-          onClick={logout}
-          className="text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-gray-300 transition-colors cursor-pointer"
-        >
-          Sign out
-        </button>
       </header>
 
       <CategorySettings categories={categories} budgets={budgets} onRefresh={refreshSettings} />
@@ -142,7 +139,7 @@ export default function App() {
 
           <section className="mt-10">
             <h2 className="text-[1.1rem] font-semibold text-gray-700 mb-4">By Category</h2>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 sm:gap-4">
               {Object.entries(byCategory)
                 .sort((a, b) => b[1].total - a[1].total)
                 .map(([category, summary]) => (
@@ -169,6 +166,15 @@ export default function App() {
           />
         </>
       )}
+
+      <footer className="mt-12 pt-6 border-t border-gray-200 flex justify-center">
+        <button
+          onClick={logout}
+          className="text-sm text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+        >
+          Sign out
+        </button>
+      </footer>
     </div>
   )
 }

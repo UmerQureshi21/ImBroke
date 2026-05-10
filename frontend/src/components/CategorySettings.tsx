@@ -53,16 +53,16 @@ export default function CategorySettings({ categories, budgets, onRefresh }: Pro
     onRefresh()
   }
 
-  const inputClass = 'border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-colors'
+  const inputClass = 'border border-black rounded-lg px-3 py-1.5 text-sm text-black placeholder-black focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-colors'
 
   return (
-    <section className="bg-white border border-gray-200 rounded-xl mb-4">
+    <section className="bg-[var(--brand-600)] border border-white rounded-xl mb-4">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-5 py-4 cursor-pointer"
       >
-        <span className="text-sm font-semibold text-gray-700">Categories &amp; Budgets</span>
-        <span className={`text-gray-400 text-lg transition-transform duration-200 ${open ? 'rotate-90' : ''}`}>›</span>
+        <span className="text-sm font-semibold text-white">Categories &amp; Budgets</span>
+        <span className={`text-white text-lg transition-transform duration-200 ${open ? 'rotate-90' : ''}`}>›</span>
       </button>
 
       <div
@@ -73,10 +73,10 @@ export default function CategorySettings({ categories, budgets, onRefresh }: Pro
           <div className="px-5 pb-5 border-t border-gray-100">
             <div className="mt-4 space-y-1">
               {categories.map(cat => (
-                <div key={cat} className="grid grid-cols-[1fr_140px_auto] gap-3 items-center py-1">
-                  <span className="text-sm text-gray-700 font-medium truncate">{cat}</span>
+                <div key={cat} className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1fr_140px_auto] gap-2 sm:gap-3 items-center py-1">
+                  <span className="text-sm text-black font-medium truncate">{cat}</span>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-black text-sm">$</span>
                     <input
                       type="number"
                       min="0"
@@ -86,12 +86,12 @@ export default function CategorySettings({ categories, budgets, onRefresh }: Pro
                       onChange={e => setLocalBudgets(p => ({ ...p, [cat]: e.target.value }))}
                       onBlur={() => saveBudget(cat)}
                       onKeyDown={e => e.key === 'Enter' && saveBudget(cat)}
-                      className={`${inputClass} w-full pl-6 ${saved === cat ? 'border-green-400 bg-green-50' : ''}`}
+                      className={`${inputClass} w-full w-20 sm:w-full pl-6 ${saved === cat ? 'border-green-400 bg-green-50' : ''}`}
                     />
                   </div>
                   <button
                     onClick={() => deleteCategory(cat)}
-                    className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none cursor-pointer px-1"
+                    className="text-black hover:text-red-400 transition-colors text-lg leading-none cursor-pointer px-1"
                     title="Remove category"
                   >
                     ×
@@ -116,7 +116,7 @@ export default function CategorySettings({ categories, budgets, onRefresh }: Pro
                 Add
               </button>
             </div>
-            <p className="mt-2 text-xs text-gray-400">
+            <p className="mt-2 text-xs text-black">
               Budget saves on blur or Enter. Clearing a budget removes it. Deleting a category also removes its budget.
             </p>
           </div>
