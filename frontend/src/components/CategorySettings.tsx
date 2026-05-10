@@ -73,7 +73,7 @@ export default function CategorySettings({ categories, budgets, onRefresh }: Pro
           <div className="px-5 pb-5 border-t border-gray-100">
             <div className="mt-4 space-y-1">
               {categories.map(cat => (
-                <div key={cat} className="grid grid-cols-[1fr_140px_auto] gap-3 items-center py-1">
+                <div key={cat} className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1fr_140px_auto] gap-2 sm:gap-3 items-center py-1">
                   <span className="text-sm text-black font-medium truncate">{cat}</span>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-black text-sm">$</span>
@@ -86,7 +86,7 @@ export default function CategorySettings({ categories, budgets, onRefresh }: Pro
                       onChange={e => setLocalBudgets(p => ({ ...p, [cat]: e.target.value }))}
                       onBlur={() => saveBudget(cat)}
                       onKeyDown={e => e.key === 'Enter' && saveBudget(cat)}
-                      className={`${inputClass} w-full pl-6 ${saved === cat ? 'border-green-400 bg-green-50' : ''}`}
+                      className={`${inputClass} w-full w-20 sm:w-full pl-6 ${saved === cat ? 'border-green-400 bg-green-50' : ''}`}
                     />
                   </div>
                   <button

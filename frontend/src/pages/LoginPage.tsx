@@ -61,9 +61,9 @@ export default function LoginPage() {
   const passwordMismatch = mode === 'register' && confirmPassword.length > 0 && password !== confirmPassword
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col sm:flex-row">
       {/* Left — green background, white auth card */}
-      <div className="w-1/2 bg-green-600 flex items-center justify-center p-12">
+      <div className="w-full sm:w-1/2 bg-green-600 flex items-center justify-center p-8 sm:p-12 min-h-screen sm:min-h-0">
         <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-sm">
           <h2 className="text-2xl font-bold text-gray-900 mb-1">
             {mode === 'login' ? 'Welcome back' : 'Create an account'}
@@ -145,7 +145,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right — white background, black text */}
-      <div className="w-1/2 bg-white flex flex-col items-center justify-center gap-6">
+      <div className="hidden sm:flex sm:w-1/2 bg-white flex-col items-center justify-center gap-6">
         <img
           src="/money-max.png"
           alt="Money Max"

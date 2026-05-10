@@ -89,9 +89,9 @@ export default function CategoryCard({ category, summary, budget, spillover = 0,
               .map((t) => (
                 <li
                   key={t.id}
-                  className="grid grid-cols-[110px_1fr_auto_auto] gap-2 items-center py-1"
+                  className="grid grid-cols-[80px_1fr_auto_auto] sm:grid-cols-[110px_1fr_auto_auto] gap-2 items-center py-1"
                 >
-                  <span className="text-gray-400 text-[0.72rem]">{t.date}</span>
+                  <span className="text-gray-400 text-[0.65rem] sm:text-[0.72rem]">{t.date}</span>
                   <span className="text-gray-700 text-sm font-medium truncate">{t.merchant}</span>
                   <span className="text-gray-900 text-sm font-semibold text-right">${t.amount.toFixed(2)}</span>
 
