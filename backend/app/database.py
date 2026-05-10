@@ -40,13 +40,17 @@ CREATE TABLE IF NOT EXISTS categories (
 
 # Each migration is idempotent — safe to re-run on every startup.
 _MIGRATIONS = [
-    # 0: unique constraint on legacy schema (no user_id)
+    # 0: deduplicate then add unique constraint on legacy schema (no user_id)
     """
     DO $$ BEGIN
         IF NOT EXISTS (
             SELECT 1 FROM pg_constraint
             WHERE conname = 'transactions_date_merchant_amount_key'
         ) THEN
+            DELETE FROM transactions
+            WHERE id NOT IN (
+                SELECT MIN(id) FROM transactions GROUP BY date, merchant, amount
+            );
             ALTER TABLE transactions ADD CONSTRAINT transactions_date_merchant_amount_key UNIQUE (date, merchant, amount);
         END IF;
     END $$;

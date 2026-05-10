@@ -114,9 +114,12 @@ export default function App() {
   return (
     <div className="max-w-[860px] mx-auto px-6 py-12">
       <header className="mb-10 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-green-600">Spend Smarter!</h1>
-          <p className="mt-1 text-sm text-gray-500"></p>
+        <div className="flex items-center gap-3">
+          <img src="/money-max.png" alt="Money Max" className="w-12 h-12 object-contain" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 leading-tight">Money Max</h1>
+            <p className="text-xs text-gray-400">Spend smarter. Save more.</p>
+          </div>
         </div>
         <button
           onClick={logout}
