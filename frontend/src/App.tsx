@@ -17,6 +17,7 @@ export default function App() {
   const [categories, setCategories] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
+  const [uploadsRemaining, setUploadsRemaining] = useState<number | null>(null)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState('')
 
@@ -64,6 +65,7 @@ export default function App() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail)
       setMessage(data.message)
+      if (data.uploads_remaining != null) setUploadsRemaining(data.uploads_remaining)
       fetchTransactions()
     } catch (e: any) {
       setMessage(`Error: ${e.message}`)
@@ -112,7 +114,7 @@ export default function App() {
     : [new Date().getFullYear(), new Date().getMonth() + 1]
 
   return (
-    <div className="max-w-[860px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <div className="max-w-[1024px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <header className="mb-8 sm:mb-10">
         <div className="flex items-center gap-3">
           <img src="/money-max.png" alt="Money Max" className="w-12 h-12 object-contain" />
@@ -125,7 +127,7 @@ export default function App() {
 
       <CategorySettings categories={categories} budgets={budgets} onRefresh={refreshSettings} />
       <ManualEntry categories={categories} onSave={fetchTransactions} />
-      <UploadZone onUpload={handleUpload} uploading={uploading} message={message} />
+      <UploadZone onUpload={handleUpload} uploading={uploading} message={message} uploadsRemaining={uploadsRemaining} />
 
       {transactions.length > 0 && (
         <>

@@ -4,9 +4,10 @@ interface Props {
   onUpload: (file: File) => void
   uploading: boolean
   message: string
+  uploadsRemaining: number | null
 }
 
-export default function UploadZone({ onUpload, uploading, message }: Props) {
+export default function UploadZone({ onUpload, uploading, message, uploadsRemaining }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   return (
@@ -52,6 +53,13 @@ export default function UploadZone({ onUpload, uploading, message }: Props) {
       {message && (
         <p className={`mt-3 text-sm font-medium ${message.startsWith('Error') ? 'text-red-600' : 'text-green-600'}`}>
           {message}
+        </p>
+      )}
+      {uploadsRemaining != null && (
+        <p className="mt-2 text-xs font-medium text-red-500">
+          {uploadsRemaining === 0
+            ? 'No uploads remaining.'
+            : `${uploadsRemaining} upload${uploadsRemaining === 1 ? '' : 's'} remaining.`}
         </p>
       )}
     </section>

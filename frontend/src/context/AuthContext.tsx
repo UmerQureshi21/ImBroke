@@ -1,25 +1,32 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { setTokens, clearTokens, getAccessToken, setOnAuthFailure, apiFetch } from '../api'
 
 interface AuthContextType {
   token: string | null
-  login: (token: string) => void
+  login: (accessToken: string, refreshToken: string) => void
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
+  const [token, setToken] = useState<string | null>(getAccessToken())
 
-  const login = (t: string) => {
-    localStorage.setItem('token', t)
-    setToken(t)
+  const login = (accessToken: string, refreshToken: string) => {
+    setTokens(accessToken, refreshToken)
+    setToken(accessToken)
   }
 
   const logout = () => {
-    localStorage.removeItem('token')
+    apiFetch('/logout', { method: 'POST' }).catch(() => {})
+    clearTokens()
     setToken(null)
   }
+
+  // When the API layer detects an expired session, force logout
+  useEffect(() => {
+    setOnAuthFailure(() => setToken(null))
+  }, [])
 
   return <AuthContext.Provider value={{ token, login, logout }}>{children}</AuthContext.Provider>
 }

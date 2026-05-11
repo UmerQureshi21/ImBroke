@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
-const API = 'http://localhost:8000'
+import { apiFetch } from '../api'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -34,14 +33,13 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`${API}/${mode}`, {
+      const res = await apiFetch(`/${mode}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail)
-      login(data.access_token)
+      login(data.access_token, data.refresh_token)
       navigate('/')
     } catch (e: any) {
       setError(e.message)
