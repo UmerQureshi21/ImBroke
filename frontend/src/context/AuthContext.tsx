@@ -3,7 +3,8 @@ import { setTokens, clearTokens, getAccessToken, setOnAuthFailure, apiFetch } fr
 
 interface AuthContextType {
   token: string | null
-  login: (accessToken: string, refreshToken: string) => void
+  userName: string | null
+  login: (accessToken: string, refreshToken: string, name: string) => void
   logout: () => void
 }
 
@@ -11,24 +12,30 @@ const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(getAccessToken())
+  const [userName, setUserName] = useState<string | null>(null)
 
-  const login = (accessToken: string, refreshToken: string) => {
+  const login = (accessToken: string, refreshToken: string, name: string) => {
     setTokens(accessToken, refreshToken)
     setToken(accessToken)
+    setUserName(name)
   }
 
   const logout = () => {
     apiFetch('/logout', { method: 'POST' }).catch(() => {})
     clearTokens()
     setToken(null)
+    setUserName(null)
   }
 
   // When the API layer detects an expired session, force logout
   useEffect(() => {
-    setOnAuthFailure(() => setToken(null))
+    setOnAuthFailure(() => {
+      setToken(null)
+      setUserName(null)
+    })
   }, [])
 
-  return <AuthContext.Provider value={{ token, login, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ token, userName, login, logout }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

@@ -115,7 +115,18 @@ _MIGRATIONS = [
         END IF;
     END $$;
     """,
-    # 6: seed default categories for existing users who have none yet
+    # 6: add name column to users
+    """
+    DO $$ BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'users' AND column_name = 'name'
+        ) THEN
+            ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT '';
+        END IF;
+    END $$;
+    """,
+    # 7: seed default categories for existing users who have none yet
     """
     DO $$ DECLARE
         uid INTEGER;

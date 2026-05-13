@@ -11,7 +11,7 @@ import ManualEntry from './components/ManualEntry'
 import MonthNav from './components/MonthNav'
 
 export default function App() {
-  const { logout } = useAuth()
+  const { logout, userName } = useAuth()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [budgets, setBudgets] = useState<Record<string, number>>({})
   const [categories, setCategories] = useState<string[]>([])
@@ -123,6 +123,9 @@ export default function App() {
             <p className="text-xs text-gray-400">Spend smarter. Save more.</p>
           </div>
         </div>
+        {userName && (
+          <p className="mt-3 text-sm text-gray-500">Welcome back, <span className="font-semibold text-gray-700">{userName}</span></p>
+        )}
       </header>
 
       <CategorySettings categories={categories} budgets={budgets} onRefresh={refreshSettings} />

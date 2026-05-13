@@ -7,6 +7,7 @@ export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -16,11 +17,13 @@ export default function LoginPage() {
   const switchMode = (m: 'login' | 'register') => {
     setMode(m)
     setError('')
+    setName('')
     setPassword('')
     setConfirmPassword('')
   }
 
   const validate = (): string | null => {
+    if (mode === 'register' && !name.trim()) return 'Name is required.'
     if (password.length < 8) return 'Password must be at least 8 characters.'
     if (mode === 'register' && password !== confirmPassword) return 'Passwords do not match.'
     return null
@@ -33,13 +36,16 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     try {
+      const payload = mode === 'register'
+        ? { email, password, name: name.trim() }
+        : { email, password }
       const res = await apiFetch(`/${mode}`, {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail)
-      login(data.access_token, data.refresh_token)
+      login(data.access_token, data.refresh_token, data.name)
       navigate('/')
     } catch (e: any) {
       setError(e.message)
@@ -85,6 +91,20 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            {mode === 'register' && (
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Your name"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className={inputClass()}
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-xs text-gray-500 mb-1">Email</label>
               <input

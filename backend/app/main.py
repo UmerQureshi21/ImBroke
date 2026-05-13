@@ -60,7 +60,13 @@ def health() -> dict[str, str]:
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
-class AuthIn(BaseModel):
+class RegisterIn(BaseModel):
+    email: str
+    password: str
+    name: str
+
+
+class LoginIn(BaseModel):
     email: str
     password: str
 
@@ -69,7 +75,7 @@ class RefreshIn(BaseModel):
     refresh_token: str
 
 
-def _issue_tokens(user_id: int) -> dict:
+def _issue_tokens(user_id: int, name: str) -> dict:
     """Create an access + refresh token pair and persist the refresh token."""
     access_token = create_access_token(user_id)
     refresh_token = create_refresh_token()
@@ -84,19 +90,20 @@ def _issue_tokens(user_id: int) -> dict:
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
+        "name": name,
     }
 
 
 @app.post("/register", status_code=status.HTTP_201_CREATED)
-def register(body: AuthIn):
+def register(body: RegisterIn):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT id FROM users WHERE email = %s", (body.email,))
             if cur.fetchone():
                 raise HTTPException(status_code=409, detail="Email already registered.")
             cur.execute(
-                "INSERT INTO users (email, hashed_password) VALUES (%s, %s) RETURNING id",
-                (body.email, hash_password(body.password)),
+                "INSERT INTO users (email, hashed_password, name) VALUES (%s, %s, %s) RETURNING id",
+                (body.email, hash_password(body.password), body.name.strip()),
             )
             user_id = cur.fetchone()["id"]
             for cat in DEFAULT_CATEGORIES:
@@ -104,18 +111,18 @@ def register(body: AuthIn):
                     "INSERT INTO categories (user_id, name) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                     (user_id, cat),
                 )
-    return _issue_tokens(user_id)
+    return _issue_tokens(user_id, body.name.strip())
 
 
 @app.post("/login")
-def login(body: AuthIn):
+def login(body: LoginIn):
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, hashed_password FROM users WHERE email = %s", (body.email,))
+            cur.execute("SELECT id, hashed_password, name FROM users WHERE email = %s", (body.email,))
             row = cur.fetchone()
     if not row or not verify_password(body.password, row["hashed_password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
-    return _issue_tokens(row["id"])
+    return _issue_tokens(row["id"], row["name"])
 
 
 @app.post("/refresh")
