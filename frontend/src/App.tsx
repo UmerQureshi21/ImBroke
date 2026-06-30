@@ -114,7 +114,15 @@ export default function App() {
     : [new Date().getFullYear(), new Date().getMonth() + 1]
 
   return (
-    <div className="max-w-[1024px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <div className="relative overflow-hidden">
+      {/* Decorative green gradient orb — top right */}
+      <div
+        className="pointer-events-none absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full"
+        style={{
+          background: 'radial-gradient(circle, rgba(34,197,94,0.18) 0%, rgba(22,163,74,0.08) 50%, transparent 70%)',
+        }}
+      />
+    <div className="relative max-w-[1024px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <header className="mb-8 sm:mb-10">
         <div className="flex items-center gap-3">
           <img src="/money-max.png" alt="Money Max" className="w-12 h-12 object-contain" />
@@ -180,6 +188,7 @@ export default function App() {
           Sign out
         </button>
       </footer>
+    </div>
     </div>
   )
 }
