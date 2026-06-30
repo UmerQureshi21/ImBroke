@@ -46,9 +46,9 @@ export default function CategoryCard({ category, summary, budget, spillover = 0,
       onClick={onToggle}
     >
       <div className="flex justify-between items-center">
-        <span className="font-semibold text-[0.95rem] text-gray-900">{category}</span>
+        <span className="font-light text-[0.95rem] text-gray-900">{category}</span>
         <div className="flex items-center gap-2.5">
-          <span className="font-bold text-[1.1rem] text-green-600">${summary.total.toFixed(2)}</span>
+          <span className="font-normal text-[1.1rem] text-green-600">${summary.total.toFixed(2)}</span>
           <span
             className={`text-gray-400 text-lg leading-none inline-block transition-transform duration-300 ${
               expanded ? 'rotate-90 text-green-600' : ''
@@ -100,8 +100,8 @@ export default function CategoryCard({ category, summary, budget, spillover = 0,
                   className="grid grid-cols-[80px_1fr_auto_auto_auto] sm:grid-cols-[110px_1fr_auto_auto_auto] gap-2 items-center py-1"
                 >
                   <span className="text-gray-400 text-[0.65rem] sm:text-[0.72rem]">{t.date}</span>
-                  <span className="text-gray-700 text-sm font-medium truncate">{t.merchant}</span>
-                  <span className="text-gray-900 text-sm font-semibold text-right">${t.amount.toFixed(2)}</span>
+                  <span className="text-gray-700 text-sm font-light truncate">{t.merchant}</span>
+                  <span className="text-gray-900 text-sm font-light text-right">${t.amount.toFixed(2)}</span>
 
                   {editingId === t.id ? (
                     <select

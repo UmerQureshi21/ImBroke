@@ -9,6 +9,7 @@ import CategorySettings from './components/CategorySettings'
 import Calendar from './components/Calendar'
 import ManualEntry from './components/ManualEntry'
 import MonthNav from './components/MonthNav'
+import SpendingPieChart from './components/SpendingPieChart'
 
 export default function App() {
   const { logout, userName } = useAuth()
@@ -20,6 +21,7 @@ export default function App() {
   const [uploadsRemaining, setUploadsRemaining] = useState<number | null>(null)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState('')
+  const [activeTab, setActiveTab] = useState<'overview' | 'daily'>('overview')
 
   const fetchTransactions = async () => {
     const res = await apiFetch('/transactions')
@@ -127,12 +129,12 @@ export default function App() {
         <div className="flex items-center gap-3">
           <img src="/money-max.png" alt="Money Max" className="w-12 h-12 object-contain" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 leading-tight">Money Max</h1>
+            <h1 className="text-2xl font-medium text-gray-900 leading-tight">Money Max</h1>
             <p className="text-xs text-gray-400">Spend smarter. Save more.</p>
           </div>
         </div>
         {userName && (
-          <p className="mt-3 text-sm text-gray-500">Welcome back, <span className="font-semibold text-gray-700">{userName}</span></p>
+          <p className="mt-3 text-sm text-gray-500">Welcome back, <span className="font-normal text-gray-700">{userName}</span></p>
         )}
       </header>
 
@@ -150,33 +152,58 @@ export default function App() {
 
           <SummaryCards totalSpend={totalSpend} transactionCount={filtered.length} />
 
-          <section className="mt-10">
-            <h2 className="text-[1.1rem] font-semibold text-gray-700 mb-4">By Category</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 sm:gap-4">
-              {Object.entries(byCategory)
-                .sort((a, b) => b[1].total - a[1].total)
-                .map(([category, summary]) => (
-                  <CategoryCard
-                    key={category}
-                    category={category}
-                    summary={summary}
-                    budget={budgets[category]}
-                    spillover={spillovers[category] ?? 0}
-                    expanded={expandedCategory === category}
-                    categories={categories}
-                    onToggle={() => setExpandedCategory(expandedCategory === category ? null : category)}
-                    onUpdate={fetchTransactions}
-                  />
-                ))}
-            </div>
-          </section>
+          {/* Tab nav */}
+          <div className="flex border-b border-gray-200 mt-8">
+            {(['overview', 'daily'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2.5 text-sm transition-colors border-b-2 -mb-px cursor-pointer ${
+                  activeTab === tab
+                    ? 'border-green-600 text-green-600 font-normal'
+                    : 'border-transparent text-gray-400 hover:text-gray-600 font-light'
+                }`}
+              >
+                {tab === 'overview' ? 'Overview' : 'Daily View'}
+              </button>
+            ))}
+          </div>
 
-          <Calendar
-            key={selectedMonth}
-            byDate={byDate}
-            defaultMonth={calMonth - 1}
-            defaultYear={calYear}
-          />
+          {activeTab === 'overview' && (
+            <>
+              <section className="mt-8">
+                <h2 className="text-[1.1rem] font-normal text-gray-700 mb-4">By Category</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 sm:gap-4">
+                  {Object.entries(byCategory)
+                    .sort((a, b) => b[1].total - a[1].total)
+                    .map(([category, summary]) => (
+                      <CategoryCard
+                        key={category}
+                        category={category}
+                        summary={summary}
+                        budget={budgets[category]}
+                        spillover={spillovers[category] ?? 0}
+                        expanded={expandedCategory === category}
+                        categories={categories}
+                        onToggle={() => setExpandedCategory(expandedCategory === category ? null : category)}
+                        onUpdate={fetchTransactions}
+                      />
+                    ))}
+                </div>
+              </section>
+
+              <SpendingPieChart byCategory={byCategory} totalSpend={totalSpend} />
+            </>
+          )}
+
+          {activeTab === 'daily' && (
+            <Calendar
+              key={selectedMonth}
+              byDate={byDate}
+              defaultMonth={calMonth - 1}
+              defaultYear={calYear}
+            />
+          )}
         </>
       )}
 

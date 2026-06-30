@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@200;300;400;500;600&display=swap');
 @import "tailwindcss";
 
 /* ── Theme ────────────────────────────────────────────
@@ -29,7 +29,8 @@
 
 @layer base {
   body {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Stack Sans Headline', sans-serif;
+    font-weight: 300;
     background-color: var(--page-bg);
     min-height: 100vh;
     margin: 0;

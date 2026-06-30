@@ -61,7 +61,7 @@ export default function CategorySettings({ categories, budgets, onRefresh }: Pro
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-5 py-4 cursor-pointer"
       >
-        <span className="text-sm font-semibold text-gray-800">Categories &amp; Budgets</span>
+        <span className="text-sm font-normal text-gray-800">Categories &amp; Budgets</span>
         <span className={`text-gray-400 text-lg transition-transform duration-200 ${open ? 'rotate-90 text-[var(--brand-600)]' : ''}`}>›</span>
       </button>
 
@@ -74,7 +74,7 @@ export default function CategorySettings({ categories, budgets, onRefresh }: Pro
             <div className="mt-4 space-y-1">
               {categories.map(cat => (
                 <div key={cat} className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1fr_140px_auto] gap-2 sm:gap-3 items-center py-1">
-                  <span className="text-sm text-gray-700 font-medium truncate">{cat}</span>
+                  <span className="text-sm text-gray-700 font-light truncate">{cat}</span>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
                     <input
@@ -111,7 +111,7 @@ export default function CategorySettings({ categories, budgets, onRefresh }: Pro
               />
               <button
                 onClick={addCategory}
-                className="bg-[var(--brand-600)] text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-[var(--brand-700)] transition-colors cursor-pointer whitespace-nowrap"
+                className="bg-[var(--brand-600)] text-white text-sm font-light px-4 py-1.5 rounded-lg hover:bg-[var(--brand-700)] transition-colors cursor-pointer whitespace-nowrap"
               >
                 Add
               </button>

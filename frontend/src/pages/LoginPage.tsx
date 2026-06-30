@@ -93,7 +93,7 @@ export default function LoginPage() {
         </div>
 
         {/* Heading */}
-        <h2 className="text-3xl font-bold text-gray-900 mb-1">
+        <h2 className="text-3xl font-light text-gray-900 mb-1">
           {mode === 'login' ? 'Welcome Back' : 'Create Account'}
         </h2>
         <p className="text-sm text-gray-500 mb-7">
@@ -104,7 +104,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {mode === 'register' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
+              <label className="block text-sm font-light text-gray-700 mb-1.5">Name</label>
               <input
                 type="text"
                 required
@@ -117,7 +117,7 @@ export default function LoginPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+            <label className="block text-sm font-light text-gray-700 mb-1.5">Email</label>
             <input
               type="email"
               required
@@ -129,7 +129,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+            <label className="block text-sm font-light text-gray-700 mb-1.5">Password</label>
             <input
               type="password"
               required
@@ -145,7 +145,7 @@ export default function LoginPage() {
 
           {mode === 'register' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
+              <label className="block text-sm font-light text-gray-700 mb-1.5">Confirm Password</label>
               <input
                 type="password"
                 required
@@ -171,18 +171,18 @@ export default function LoginPage() {
                 />
                 Remember me
               </label>
-              <button type="button" className="text-sm text-gray-600 font-medium">
+              <button type="button" className="text-sm text-gray-600 font-light">
                 Forgot Password?
               </button>
             </div>
           )}
 
-          {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+          {error && <p className="text-xs text-red-600 font-light">{error}</p>}
 
           <button
             type="submit"
             disabled={submitting}
-            className="mt-2 bg-green-600 text-white text-base font-semibold py-4 rounded-full hover:bg-green-700 disabled:opacity-50 transition-colors cursor-pointer"
+            className="mt-2 bg-green-600 text-white text-base font-normal py-4 rounded-full hover:bg-green-700 disabled:opacity-50 transition-colors cursor-pointer"
           >
             {submitting ? '...' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </button>
@@ -213,7 +213,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
-            className="text-green-600 font-semibold"
+            className="text-green-600 font-normal"
           >
             {mode === 'login' ? 'Sign Up' : 'Sign In'}
           </button>
@@ -225,7 +225,7 @@ export default function LoginPage() {
         {/* Left — green background, white auth card */}
         <div className="w-1/2 bg-green-600 flex items-center justify-center p-12">
           <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-sm">
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">
+            <h2 className="text-2xl font-light text-gray-900 mb-1">
               {mode === 'login' ? 'Welcome back' : 'Create an account'}
             </h2>
             <p className="text-sm text-gray-500 mb-6">
@@ -237,7 +237,7 @@ export default function LoginPage() {
                 <button
                   key={m}
                   onClick={() => switchMode(m)}
-                  className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer ${
+                  className={`flex-1 py-1.5 text-sm font-light rounded-md transition-colors cursor-pointer ${
                     mode === m ? 'bg-green-600 text-white' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -305,12 +305,12 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+              {error && <p className="text-xs text-red-600 font-light">{error}</p>}
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="mt-1 bg-green-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors cursor-pointer"
+                className="mt-1 bg-green-600 text-white text-sm font-light py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {submitting ? '...' : mode === 'login' ? 'Sign in' : 'Create account'}
               </button>
@@ -326,7 +326,7 @@ export default function LoginPage() {
             className="w-44 h-44 object-contain"
           />
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Money Max</h1>
+            <h1 className="text-4xl font-light text-gray-900 tracking-tight">Money Max</h1>
             <p className="mt-2 text-gray-500 text-sm">Spend smarter. Save more.</p>
           </div>
         </div>
