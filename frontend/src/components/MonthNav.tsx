@@ -17,7 +17,7 @@ export default function MonthNav({ availableMonths, selectedMonth, onChange }: P
   const hasNext = idx < availableMonths.length - 1
 
   const btnClass = (enabled: boolean) =>
-    `w-8 h-8 flex items-center justify-center rounded-full border text-lg font-medium transition-colors
+    `w-8 h-8 flex items-center justify-center rounded-full border text-lg font-light transition-colors
     ${enabled
       ? 'border-gray-200 text-gray-700 hover:bg-green-50 hover:border-green-300 cursor-pointer'
       : 'border-gray-100 text-gray-300 cursor-default'}`
@@ -31,7 +31,7 @@ export default function MonthNav({ availableMonths, selectedMonth, onChange }: P
         ‹
       </button>
       <div>
-        <span className="font-semibold text-gray-900">{selectedMonth ? formatMonth(selectedMonth) : '—'}</span>
+        <span className="font-light text-gray-900">{selectedMonth ? formatMonth(selectedMonth) : '—'}</span>
         <span className="text-xs text-gray-400 ml-2">
           {idx + 1} of {availableMonths.length} month{availableMonths.length !== 1 ? 's' : ''}
         </span>

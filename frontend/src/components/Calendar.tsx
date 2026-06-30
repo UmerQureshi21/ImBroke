@@ -44,7 +44,7 @@ export default function Calendar({ byDate, defaultMonth, defaultYear }: Props) {
 
   return (
     <section className="mt-10">
-      <h2 className="text-[1.1rem] font-semibold text-gray-700 mb-3">Daily View</h2>
+      <h2 className="text-[1.1rem] font-light text-gray-700 mb-3">Daily View</h2>
 
       <div className="flex items-center gap-3.5 mb-3.5 text-sm text-gray-500">
         <span>Highlight days over <strong className="text-gray-900">${threshold}</strong></span>
@@ -63,7 +63,7 @@ export default function Calendar({ byDate, defaultMonth, defaultYear }: Props) {
 
         <div className="grid grid-cols-7 gap-[2px] sm:gap-[3px]">
           {DAYS.map(d => (
-            <div key={d} className="text-center text-[0.5rem] sm:text-[0.62rem] font-semibold text-gray-400 uppercase pb-1">{d}</div>
+            <div key={d} className="text-center text-[0.5rem] sm:text-[0.62rem] font-light text-gray-400 uppercase pb-1">{d}</div>
           ))}
           {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`e${i}`} />)}
           {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -81,7 +81,7 @@ export default function Calendar({ byDate, defaultMonth, defaultYear }: Props) {
                 onClick={(e) => hasTxns && handleDayClick(dateStr, e)}
                 className={[
                   'aspect-square flex flex-col items-center justify-center rounded-md text-sm sm:text-xl md:text-2xl gap-0.5 transition-colors',
-                  !hasTxns ? 'text-gray-400 cursor-default' : 'font-semibold cursor-pointer',
+                  !hasTxns ? 'text-gray-400 cursor-default' : 'font-light cursor-pointer',
                   isSelected ? 'bg-green-600 text-white'
                     : isOver ? 'bg-red-100 text-red-800 hover:bg-red-200'
                     : hasTxns ? 'text-gray-900 hover:bg-green-50' : '',
@@ -104,19 +104,19 @@ export default function Calendar({ byDate, defaultMonth, defaultYear }: Props) {
           style={{ top: popoverPos.top, left: popoverPos.left }}
         >
           <div className="absolute -top-[5px] left-1/2 -translate-x-1/2 rotate-45 w-[10px] h-[10px] bg-white border-l border-t border-gray-200" />
-          <h3 className="text-sm font-semibold text-gray-900 mb-2.5">
+          <h3 className="text-sm font-light text-gray-900 mb-2.5">
             {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' })}
           </h3>
           <ul className="space-y-1.5">
             {byDate[selectedDate].map(t => (
               <li key={t.id} className="grid grid-cols-[auto_1fr_auto] gap-2 items-center">
                 <span className="text-gray-400 text-[0.7rem] whitespace-nowrap">{t.category}</span>
-                <span className="text-gray-700 text-[0.8rem] font-medium truncate">{t.merchant}</span>
-                <span className="text-gray-900 text-[0.8rem] font-semibold">${t.amount.toFixed(2)}</span>
+                <span className="text-gray-700 text-[0.8rem] font-light truncate">{t.merchant}</span>
+                <span className="text-gray-900 text-[0.8rem] font-light">${t.amount.toFixed(2)}</span>
               </li>
             ))}
           </ul>
-          <div className="mt-2.5 pt-2 border-t border-gray-100 text-[0.82rem] font-bold text-green-600 text-right">
+          <div className="mt-2.5 pt-2 border-t border-gray-100 text-[0.82rem] font-normal text-green-600 text-right">
             Total: ${byDate[selectedDate].reduce((s, t) => s + t.amount, 0).toFixed(2)}
           </div>
         </div>

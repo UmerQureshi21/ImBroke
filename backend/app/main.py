@@ -1,29 +1,42 @@
 import csv
 import io
 import json
-from datetime import datetime
+import os
+from datetime import datetime, timedelta, timezone
 
-import anthropic
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
-from .auth import create_token, get_current_user, hash_password, verify_password
-from .database import get_conn, init_db
+load_dotenv()  # must run before importing auth (which reads SECRET_KEY from env)
+
+import anthropic  # noqa: E402
+from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile, status  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
+
+from .auth import (  # noqa: E402
+    REFRESH_TOKEN_EXPIRE_DAYS,
+    create_access_token,
+    create_refresh_token,
+    get_current_user,
+    hash_password,
+    verify_password,
+)
+from .database import get_conn, init_db  # noqa: E402
 
 DEFAULT_CATEGORIES = [
     'Dining Out', 'Entertainment', 'Health & Wellness', 'Other',
     'Personal Care', 'Shopping', 'Tim Hortons', 'Transport',
 ]
 
-load_dotenv()
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+MAX_UPLOADS = int(os.getenv("MAX_UPLOADS", "3"))
+MAX_CSV_SIZE_MB = int(os.getenv("MAX_CSV_SIZE_MB", "5"))
 
 app = FastAPI(title="Budgeter API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,21 +60,55 @@ def health() -> dict[str, str]:
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
-class AuthIn(BaseModel):
+class RegisterIn(BaseModel):
+    email: str
+    password: str
+    name: str
+
+
+class LoginIn(BaseModel):
     email: str
     password: str
 
 
+def _issue_tokens(user_id: int, name: str, response: Response) -> dict:
+    """Create an access + refresh token pair, persist the refresh token, and set it as an HttpOnly cookie."""
+    access_token = create_access_token(user_id)
+    refresh_token = create_refresh_token()
+    expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (%s, %s, %s)",
+                (user_id, refresh_token, expires_at),
+            )
+    secure = FRONTEND_URL.startswith("https://")
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=secure,
+        samesite="none" if secure else "lax",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+        path="/",
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "name": name,
+    }
+
+
 @app.post("/register", status_code=status.HTTP_201_CREATED)
-def register(body: AuthIn):
+def register(body: RegisterIn, response: Response):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT id FROM users WHERE email = %s", (body.email,))
             if cur.fetchone():
                 raise HTTPException(status_code=409, detail="Email already registered.")
             cur.execute(
-                "INSERT INTO users (email, hashed_password) VALUES (%s, %s) RETURNING id",
-                (body.email, hash_password(body.password)),
+                "INSERT INTO users (email, hashed_password, name) VALUES (%s, %s, %s) RETURNING id",
+                (body.email, hash_password(body.password), body.name.strip()),
             )
             user_id = cur.fetchone()["id"]
             for cat in DEFAULT_CATEGORIES:
@@ -69,18 +116,54 @@ def register(body: AuthIn):
                     "INSERT INTO categories (user_id, name) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                     (user_id, cat),
                 )
-    return {"access_token": create_token(user_id), "token_type": "bearer"}
+    return _issue_tokens(user_id, body.name.strip(), response)
 
 
 @app.post("/login")
-def login(body: AuthIn):
+def login(body: LoginIn, response: Response):
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, hashed_password FROM users WHERE email = %s", (body.email,))
+            cur.execute("SELECT id, hashed_password, name FROM users WHERE email = %s", (body.email,))
             row = cur.fetchone()
     if not row or not verify_password(body.password, row["hashed_password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
-    return {"access_token": create_token(row["id"]), "token_type": "bearer"}
+    return _issue_tokens(row["id"], row["name"], response)
+
+
+@app.post("/refresh")
+def refresh(request: Request):
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="No refresh token.")
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM refresh_tokens WHERE expires_at < %s", (datetime.now(timezone.utc),))
+            cur.execute(
+                "SELECT user_id, expires_at FROM refresh_tokens WHERE token = %s",
+                (refresh_token,),
+            )
+            row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token.")
+    if row["expires_at"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(status_code=401, detail="Refresh token has expired.")
+    return {"access_token": create_access_token(row["user_id"]), "token_type": "bearer"}
+
+
+@app.post("/logout")
+def logout(response: Response, user_id: int = Depends(get_current_user)):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM refresh_tokens WHERE user_id = %s", (user_id,))
+    secure = FRONTEND_URL.startswith("https://")
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=secure,
+        samesite="none" if secure else "lax",
+        path="/",
+    )
+    return {"message": "Logged out."}
 
 
 # ── CSV parsing + categorization ──────────────────────────────────────────────
@@ -170,7 +253,25 @@ async def upload_csv(
     file: UploadFile = File(...),
     user_id: int = Depends(get_current_user),
 ):
-    content = (await file.read()).decode("utf-8-sig")
+    # ── Rate limiting ─────────────────────────────────────────
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT upload_count FROM users WHERE id = %s", (user_id,))
+            row = cur.fetchone()
+            if row and row["upload_count"] >= MAX_UPLOADS:
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Upload limit reached ({MAX_UPLOADS}). Contact admin to increase.",
+                )
+
+    # ── File size check ───────────────────────────────────────
+    raw = await file.read()
+    if len(raw) > MAX_CSV_SIZE_MB * 1024 * 1024:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size is {MAX_CSV_SIZE_MB} MB.",
+        )
+    content = raw.decode("utf-8-sig")
 
     transactions = parse_td_csv(content)
     if not transactions:
@@ -209,6 +310,12 @@ async def upload_csv(
                 result = cur.fetchone()
                 if result:
                     rows.append({"id": result["id"], **t})
+            # increment upload count
+            cur.execute(
+                "UPDATE users SET upload_count = upload_count + 1 WHERE id = %s RETURNING upload_count",
+                (user_id,),
+            )
+            new_count = cur.fetchone()["upload_count"]
 
     parts = [f"Added {len(rows)} new transaction{'s' if len(rows) != 1 else ''}"]
     if skipped:
@@ -217,6 +324,7 @@ async def upload_csv(
     return {
         "message": ", ".join(parts) + ".",
         "transactions": rows,
+        "uploads_remaining": max(0, MAX_UPLOADS - new_count),
     }
 
 
@@ -328,6 +436,19 @@ def update_transaction(txn_id: int, body: TransactionUpdate, user_id: int = Depe
             if not cur.fetchone():
                 raise HTTPException(status_code=404, detail="Transaction not found.")
     return {"id": txn_id, "category": body.category}
+
+
+@app.delete("/transactions/{txn_id}")
+def delete_transaction(txn_id: int, user_id: int = Depends(get_current_user)):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM transactions WHERE id = %s AND user_id = %s RETURNING id",
+                (txn_id, user_id),
+            )
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail="Transaction not found.")
+    return {"deleted": txn_id}
 
 
 @app.get("/transactions")

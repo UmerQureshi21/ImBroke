@@ -36,6 +36,14 @@ CREATE TABLE IF NOT EXISTS categories (
     name TEXT NOT NULL,
     PRIMARY KEY (user_id, name)
 );
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    token TEXT UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 # Each migration is idempotent — safe to re-run on every startup.
@@ -96,7 +104,29 @@ _MIGRATIONS = [
         END IF;
     END $$;
     """,
-    # 5: seed default categories for existing users who have none yet
+    # 5: add upload_count to users
+    """
+    DO $$ BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'users' AND column_name = 'upload_count'
+        ) THEN
+            ALTER TABLE users ADD COLUMN upload_count INTEGER DEFAULT 0;
+        END IF;
+    END $$;
+    """,
+    # 6: add name column to users
+    """
+    DO $$ BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'users' AND column_name = 'name'
+        ) THEN
+            ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT '';
+        END IF;
+    END $$;
+    """,
+    # 7: seed default categories for existing users who have none yet
     """
     DO $$ DECLARE
         uid INTEGER;

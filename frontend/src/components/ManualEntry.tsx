@@ -32,7 +32,7 @@ export default function ManualEntry({ categories, onSave }: Props) {
       setDate('')
       setMerchant('')
       setAmount('')
-      setCategory(CATEGORIES[0])
+      setCategory(categories[0] ?? '')
       setMessage({ text: 'Transaction added.', error: false })
       onSave()
     } catch (e: any) {
@@ -46,7 +46,7 @@ export default function ManualEntry({ categories, onSave }: Props) {
 
   return (
     <section className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
-      <h2 className="text-sm font-semibold text-gray-700 mb-4">Add a transaction</h2>
+      <h2 className="text-sm font-normal text-gray-700 mb-4">Add a transaction</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_1.5fr_auto] gap-3 items-end">
           <div>
@@ -96,13 +96,13 @@ export default function ManualEntry({ categories, onSave }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors cursor-pointer whitespace-nowrap"
+            className="bg-green-600 text-white text-sm font-light px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors cursor-pointer whitespace-nowrap"
           >
             {saving ? 'Saving...' : 'Add'}
           </button>
         </div>
         {message && (
-          <p className={`text-xs font-medium ${message.error ? 'text-red-600' : 'text-green-600'}`}>
+          <p className={`text-xs font-light ${message.error ? 'text-red-600' : 'text-green-600'}`}>
             {message.text}
           </p>
         )}
