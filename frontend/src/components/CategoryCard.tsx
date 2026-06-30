@@ -17,6 +17,14 @@ export default function CategoryCard({ category, summary, budget, spillover = 0,
   const effective = summary.total + spillover
   const pct = budget ? effective / budget : 0
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+
+  const handleDelete = async (id: number) => {
+    setDeletingId(id)
+    await apiFetch(`/transactions/${id}`, { method: 'DELETE' })
+    setDeletingId(null)
+    onUpdate()
+  }
 
   const handleCategoryChange = async (id: number, newCategory: string) => {
     setEditingId(null)
@@ -89,7 +97,7 @@ export default function CategoryCard({ category, summary, budget, spillover = 0,
               .map((t) => (
                 <li
                   key={t.id}
-                  className="grid grid-cols-[80px_1fr_auto_auto] sm:grid-cols-[110px_1fr_auto_auto] gap-2 items-center py-1"
+                  className="grid grid-cols-[80px_1fr_auto_auto_auto] sm:grid-cols-[110px_1fr_auto_auto_auto] gap-2 items-center py-1"
                 >
                   <span className="text-gray-400 text-[0.65rem] sm:text-[0.72rem]">{t.date}</span>
                   <span className="text-gray-700 text-sm font-medium truncate">{t.merchant}</span>
@@ -117,6 +125,15 @@ export default function CategoryCard({ category, summary, budget, spillover = 0,
                       Move ›
                     </button>
                   )}
+
+                  <button
+                    onClick={e => { e.stopPropagation(); handleDelete(t.id) }}
+                    disabled={deletingId === t.id}
+                    title="Delete transaction"
+                    className="text-gray-200 hover:text-red-500 transition-colors text-xs px-1.5 py-1 rounded hover:bg-red-50 disabled:opacity-40 cursor-pointer"
+                  >
+                    ✕
+                  </button>
                 </li>
               ))}
           </div>

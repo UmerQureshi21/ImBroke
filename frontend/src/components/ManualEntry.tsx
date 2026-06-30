@@ -32,7 +32,7 @@ export default function ManualEntry({ categories, onSave }: Props) {
       setDate('')
       setMerchant('')
       setAmount('')
-      setCategory(CATEGORIES[0])
+      setCategory(categories[0] ?? '')
       setMessage({ text: 'Transaction added.', error: false })
       onSave()
     } catch (e: any) {

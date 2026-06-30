@@ -130,7 +130,7 @@ export default function App() {
 
       <CategorySettings categories={categories} budgets={budgets} onRefresh={refreshSettings} />
       <ManualEntry categories={categories} onSave={fetchTransactions} />
-      <UploadZone onUpload={handleUpload} uploading={uploading} message={message} uploadsRemaining={uploadsRemaining} />
+      {/* <UploadZone onUpload={handleUpload} uploading={uploading} message={message} uploadsRemaining={uploadsRemaining} /> */}
 
       {transactions.length > 0 && (
         <>

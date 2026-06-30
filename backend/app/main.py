@@ -424,6 +424,19 @@ def update_transaction(txn_id: int, body: TransactionUpdate, user_id: int = Depe
     return {"id": txn_id, "category": body.category}
 
 
+@app.delete("/transactions/{txn_id}")
+def delete_transaction(txn_id: int, user_id: int = Depends(get_current_user)):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM transactions WHERE id = %s AND user_id = %s RETURNING id",
+                (txn_id, user_id),
+            )
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail="Transaction not found.")
+    return {"deleted": txn_id}
+
+
 @app.get("/transactions")
 def get_transactions(user_id: int = Depends(get_current_user)):
     with get_conn() as conn:
