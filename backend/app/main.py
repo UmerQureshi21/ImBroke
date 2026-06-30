@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()  # must run before importing auth (which reads SECRET_KEY from env)
 
 import anthropic  # noqa: E402
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status  # noqa: E402
+from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile, status  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
@@ -71,12 +71,8 @@ class LoginIn(BaseModel):
     password: str
 
 
-class RefreshIn(BaseModel):
-    refresh_token: str
-
-
-def _issue_tokens(user_id: int, name: str) -> dict:
-    """Create an access + refresh token pair and persist the refresh token."""
+def _issue_tokens(user_id: int, name: str, response: Response) -> dict:
+    """Create an access + refresh token pair, persist the refresh token, and set it as an HttpOnly cookie."""
     access_token = create_access_token(user_id)
     refresh_token = create_refresh_token()
     expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
@@ -86,16 +82,25 @@ def _issue_tokens(user_id: int, name: str) -> dict:
                 "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (%s, %s, %s)",
                 (user_id, refresh_token, expires_at),
             )
+    secure = FRONTEND_URL.startswith("https://")
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=secure,
+        samesite="none" if secure else "lax",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+        path="/",
+    )
     return {
         "access_token": access_token,
-        "refresh_token": refresh_token,
         "token_type": "bearer",
         "name": name,
     }
 
 
 @app.post("/register", status_code=status.HTTP_201_CREATED)
-def register(body: RegisterIn):
+def register(body: RegisterIn, response: Response):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT id FROM users WHERE email = %s", (body.email,))
@@ -111,30 +116,31 @@ def register(body: RegisterIn):
                     "INSERT INTO categories (user_id, name) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                     (user_id, cat),
                 )
-    return _issue_tokens(user_id, body.name.strip())
+    return _issue_tokens(user_id, body.name.strip(), response)
 
 
 @app.post("/login")
-def login(body: LoginIn):
+def login(body: LoginIn, response: Response):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT id, hashed_password, name FROM users WHERE email = %s", (body.email,))
             row = cur.fetchone()
     if not row or not verify_password(body.password, row["hashed_password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
-    return _issue_tokens(row["id"], row["name"])
+    return _issue_tokens(row["id"], row["name"], response)
 
 
 @app.post("/refresh")
-def refresh(body: RefreshIn):
+def refresh(request: Request):
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="No refresh token.")
     with get_conn() as conn:
         with conn.cursor() as cur:
-            # clean up expired tokens
             cur.execute("DELETE FROM refresh_tokens WHERE expires_at < %s", (datetime.now(timezone.utc),))
-            # look up the provided token
             cur.execute(
                 "SELECT user_id, expires_at FROM refresh_tokens WHERE token = %s",
-                (body.refresh_token,),
+                (refresh_token,),
             )
             row = cur.fetchone()
     if not row:
@@ -145,10 +151,18 @@ def refresh(body: RefreshIn):
 
 
 @app.post("/logout")
-def logout(user_id: int = Depends(get_current_user)):
+def logout(response: Response, user_id: int = Depends(get_current_user)):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM refresh_tokens WHERE user_id = %s", (user_id,))
+    secure = FRONTEND_URL.startswith("https://")
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=secure,
+        samesite="none" if secure else "lax",
+        path="/",
+    )
     return {"message": "Logged out."}
 
 

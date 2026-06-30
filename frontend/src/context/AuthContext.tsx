@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import { setTokens, clearTokens, getAccessToken, setOnAuthFailure, apiFetch } from '../api'
+import { setTokens, clearTokens, getAccessToken, setOnAuthFailure, apiFetch, tryRefresh } from '../api'
 
 interface AuthContextType {
   token: string | null
   userName: string | null
-  login: (accessToken: string, refreshToken: string, name: string) => void
+  loading: boolean
+  login: (accessToken: string, name: string) => void
   logout: () => void
 }
 
@@ -13,9 +14,10 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(getAccessToken())
   const [userName, setUserName] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const login = (accessToken: string, refreshToken: string, name: string) => {
-    setTokens(accessToken, refreshToken)
+  const login = (accessToken: string, name: string) => {
+    setTokens(accessToken)
     setToken(accessToken)
     setUserName(name)
   }
@@ -27,15 +29,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserName(null)
   }
 
-  // When the API layer detects an expired session, force logout
   useEffect(() => {
     setOnAuthFailure(() => {
       setToken(null)
       setUserName(null)
     })
+
+    // Attempt to restore session from the HttpOnly refresh token cookie
+    tryRefresh().then(ok => {
+      if (ok) setToken(getAccessToken())
+      setLoading(false)
+    })
   }, [])
 
-  return <AuthContext.Provider value={{ token, userName, login, logout }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ token, userName, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

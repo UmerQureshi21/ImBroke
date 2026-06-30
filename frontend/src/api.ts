@@ -1,25 +1,19 @@
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
-// ── In-memory token store (not localStorage — prevents XSS token theft) ──
+// ── In-memory access token (not localStorage — prevents XSS token theft) ──
+// The refresh token lives in an HttpOnly cookie set by the server.
 let accessToken: string | null = null
-let refreshToken: string | null = null
 
-export function setTokens(access: string, refresh: string) {
+export function setTokens(access: string) {
   accessToken = access
-  refreshToken = refresh
 }
 
 export function clearTokens() {
   accessToken = null
-  refreshToken = null
 }
 
 export function getAccessToken() {
   return accessToken
-}
-
-export function getRefreshToken() {
-  return refreshToken
 }
 
 // Callback invoked when token refresh fails (session expired)
@@ -32,8 +26,7 @@ export function setOnAuthFailure(cb: () => void) {
 let isRefreshing = false
 let refreshPromise: Promise<boolean> | null = null
 
-async function tryRefresh(): Promise<boolean> {
-  if (!refreshToken) return false
+export async function tryRefresh(): Promise<boolean> {
   if (isRefreshing && refreshPromise) return refreshPromise
 
   isRefreshing = true
@@ -41,8 +34,7 @@ async function tryRefresh(): Promise<boolean> {
     try {
       const res = await fetch(`${API}/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+        credentials: 'include',
       })
       if (!res.ok) return false
       const data = await res.json()
@@ -66,20 +58,21 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
 
   let res = await fetch(`${API}${path}`, {
     ...options,
+    credentials: 'include',
     headers: { ...headers, ...(options.headers as Record<string, string> ?? {}) },
   })
 
-  // If 401 and we have a refresh token, try to refresh and retry once
-  if (res.status === 401 && refreshToken) {
+  // If 401, try to refresh via the HttpOnly cookie and retry once
+  if (res.status === 401) {
     const refreshed = await tryRefresh()
     if (refreshed) {
       headers['Authorization'] = `Bearer ${accessToken}`
       res = await fetch(`${API}${path}`, {
         ...options,
+        credentials: 'include',
         headers: { ...headers, ...(options.headers as Record<string, string> ?? {}) },
       })
     } else {
-      // Refresh failed — session is dead, force logout
       clearTokens()
       onAuthFailure?.()
     }
